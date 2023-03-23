@@ -1,0 +1,7 @@
+_target_: src.datamodules.SHREC13_images.SHREC13_Image_Module
+data_dir: ${paths.data_dir}
+batch_size: 64
+num_workers: 0
+pin_memory: False
+data_mean: [0.9799, 0.9799, 0.9799]
+data_std: [0.1075, 0.1075, 0.1075]

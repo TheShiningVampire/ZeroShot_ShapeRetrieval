@@ -1,0 +1,7 @@
+_target_: src.datamodules.PIX3D_datamodule.PIX3D_DataModule
+data_dir: ${paths.data_dir}
+batch_size: 24
+num_workers: 0
+pin_memory: False
+nb_points: 2048
+dset_norm: 2

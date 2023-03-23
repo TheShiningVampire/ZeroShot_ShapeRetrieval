@@ -1,0 +1,69 @@
+_target_: src.models.Siamese_module.SiameseModule
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+# net:
+#   _target_: src.models.components.simple_dense_net.SimpleDenseNet
+#   input_size: 784
+#   lin1_size: 64
+#   lin2_size: 128
+#   lin3_size: 64
+#   output_size: 10
+
+multi_view_net:
+  _target_: src.models.components.mvtn.MVTN
+  nb_views: 8
+  views_config: circular
+  canonical_elevation: 30.0
+  canonical_distance: 2.2 
+  transform_distance: false
+  input_view_noise: 0.0 
+  shape_extractor: PointNet
+  screatch_feature_extractor: true
+
+multi_view_renderer:
+  _target_: src.models.components.renderer.MVRenderer
+  nb_views: 8
+  image_size: 224
+  pc_rendering: false
+  object_color: blue
+  background_color: white
+  light_direction : "random"
+  cull_backfaces : false
+  points_radius : 0.006 
+  points_per_pixel : 1 
+  faces_per_pixel : 2
+
+mvnet_depth: 50
+feature_extractor_num_layers: 6
+
+siamese_cnn:
+  _target_: src.models.components.siamese_cnn.Siamese_CNN
+  input_channels: 512
+  input_size: 28
+  feature_extractor_num_layers: 6
+
+criterion:
+  _target_: src.models.loss_functions.contrastive_loss.ContrastiveLoss
+  margin: 1.0
+
+shape_feature_network:
+  _target_: src.models.components.shape_feature_extractor.Shape_Feature_Extractor
+
+image_feature_network:
+  _target_: src.models.components.image_feature_extractor.Img_Feature_Extractor
+
+image_network_weights: /home/SharedData/Vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
+
+shape_network_weights: /home/SharedData/Vinit/Saved_Weights/Shape_Featue_Extractor/weight.ckpt

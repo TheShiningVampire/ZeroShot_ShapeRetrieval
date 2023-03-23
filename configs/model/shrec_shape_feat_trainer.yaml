@@ -1,0 +1,44 @@
+_target_: src.models.shape_feature_trainer.SHREC_SHAPE_Feat_Trainer
+
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  lr: 0.0001
+  weight_decay: 0.0001
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _partial_: true
+  mode: min
+  factor: 0.1
+  patience: 10
+
+net:
+  _target_: src.models.components.shape_feature_extractor.Shape_Feature_Extractor
+
+multi_view_net:
+  _target_: src.models.components.mvtn.MVTN
+  nb_views: 8
+  views_config: circular
+  canonical_elevation: 30.0
+  canonical_distance: 2.2 
+  transform_distance: false
+  input_view_noise: 0.0 
+  shape_extractor: PointNet
+  screatch_feature_extractor: true
+
+multi_view_renderer:
+  _target_: src.models.components.renderer.MVRenderer
+  nb_views: 8
+  image_size: 224
+  pc_rendering: false
+  object_color: blue
+  background_color: white
+  light_direction : "random"
+  cull_backfaces : false
+  points_radius : 0.006 
+  points_per_pixel : 1 
+  faces_per_pixel : 2
+
+
+

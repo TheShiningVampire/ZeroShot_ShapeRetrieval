@@ -1,0 +1,7 @@
+_target_: src.datamodules.SHREC13_datamodule.SHREC13_DataModule
+data_dir: ${paths.data_dir}
+batch_size: 14
+num_workers: 8
+pin_memory: False
+nb_points: 2048
+dset_norm: 2
