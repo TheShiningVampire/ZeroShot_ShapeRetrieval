@@ -42,7 +42,8 @@ class DomainDisentangledModule(LightningModule):
         domain_disentagled_shape_feat: torch.nn.Module,
         domain_disentangled_semantic_encoder: torch.nn.Module,
         cross_modal_latent_loss: torch.nn.Module,
-        cross_modal_triplet_loss: torch.nn.Module,
+        # cross_modal_triplet_loss: torch.nn.Module,
+        info_nce_loss: torch.nn.Module,
         cross_modal_classifer_loss: torch.nn.Module,
         image_feature_network: torch.nn.Module,
         shape_feature_network: torch.nn.Module,
@@ -108,7 +109,7 @@ class DomainDisentangledModule(LightningModule):
 
         # loss function
         self.cross_modal_latent_loss = cross_modal_latent_loss
-        self.cross_modal_triplet_loss = cross_modal_triplet_loss
+        self.cross_modal_triplet_loss = info_nce_loss
         self.cross_modal_classifer_loss = cross_modal_classifer_loss
 
         # use separate metric instance for train, val and test step
