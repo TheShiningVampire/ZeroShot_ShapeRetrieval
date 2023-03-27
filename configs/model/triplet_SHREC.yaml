@@ -55,9 +55,12 @@ domain_disentangled_semantic_encoder:
 cross_modal_latent_loss:
   _target_: src.models.loss_functions.cross_modal_latent_loss.Cross_Modal_Latent_Loss
 
-cross_modal_triplet_loss:
-  _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
-  margin: 1.0
+# cross_modal_triplet_loss:
+#   _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
+#   margin: 1.0
+
+info_nce_loss:
+  _target_: src.models.loss_functions.info_nce_loss.Info_NCE_Loss
 
 cross_modal_classifer_loss:
   _target_: src.models.loss_functions.cross_modal_classification.Cross_Modal_Classification_Loss
