@@ -154,3 +154,4 @@ data/
 .env
 .autoenv
 0_1.png
+configs/train.yaml
