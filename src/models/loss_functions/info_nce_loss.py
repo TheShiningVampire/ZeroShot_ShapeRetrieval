@@ -8,9 +8,9 @@ class Info_NCE_Loss(torch.nn.Module):
         super(Info_NCE_Loss, self).__init__()
 
     def forward(self, pos_shape_feat, img_feat, neg_shape_feat):
-        # pos_shape_feat = pos_shape_feat/ pos_shape_feat.norm(p=2, dim=1, keepdim=True)
-        # img_feat = img_feat/ img_feat.norm(p=2, dim=1, keepdim=True)
-        # neg_shape_feat = neg_shape_feat/ neg_shape_feat.norm(p=2, dim=1, keepdim=True)
+        pos_shape_feat = pos_shape_feat/ (pos_shape_feat.norm(p=2, dim=1, keepdim=True) + 1e-6)
+        img_feat = img_feat/ (img_feat.norm(p=2, dim=1, keepdim=True) + 1e-6)
+        neg_shape_feat = neg_shape_feat/ (neg_shape_feat.norm(p=2, dim=1, keepdim=True) + 1e-6)
 
         # # Using cosine distance
         # pos_cosine_similarity = F.cosine_similarity(pos_shape_feat, img_feat, dim=1, eps=1e-6)

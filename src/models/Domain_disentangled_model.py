@@ -39,7 +39,9 @@ class DomainDisentangledModule(LightningModule):
         mvnet_depth: int,
         feature_extractor_num_layers: int,
         domain_disentagled_image_feat: torch.nn.Module,
+        domain_disentagled_image_classifier: torch.nn.Module,
         domain_disentagled_shape_feat: torch.nn.Module,
+        domain_disentagled_shape_classifier: torch.nn.Module,
         domain_disentangled_semantic_encoder: torch.nn.Module,
         cross_modal_latent_loss: torch.nn.Module,
         # cross_modal_triplet_loss: torch.nn.Module,
@@ -104,7 +106,11 @@ class DomainDisentangledModule(LightningModule):
         # self.image_feature_extractor.requires_grad_(False)
 
         self.domain_disentagled_image_feat = domain_disentagled_image_feat
+        self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
+
         self.domain_disentagled_shape_feat = domain_disentagled_shape_feat
+        self.domain_disentagled_shape_classifier = domain_disentagled_shape_classifier
+
         self.domain_disentangled_semantic_encoder = domain_disentangled_semantic_encoder
 
         # loss function
@@ -187,19 +193,29 @@ class DomainDisentangledModule(LightningModule):
 
         pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-        pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
-        image_domain_specific, image_domain_inv = img_feat
-        neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        # pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
+        pos_model_domain_specific, _ = pos_model_feat           # 1024 dim. features
+        # image_domain_specific, image_domain_inv = img_feat
+        image_domain_specific, _ = img_feat                     # 1024 dim. features
+        # neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        neg_model_domain_specific, _ = neg_model_feat           # 1024 dim. features
         
         cmd = self.cross_modal_latent_loss(pos_model_domain_specific, image_domain_specific, semantic_feat)
 
-        cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, image_domain_specific, neg_model_domain_specific)
+        cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
+        image_domain_specific, neg_model_domain_specific)
         
-        cmcl1 = self.cross_modal_classifer_loss(pos_model_domain_inv, label_positive)
+        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_specific)
 
-        cmcl2 = self.cross_modal_classifer_loss(image_domain_inv, label_positive)
+        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_specific)
 
-        cmcl3 = self.cross_modal_classifer_loss(neg_model_domain_inv, label_negative)
+        classification_features_i = self.domain_disentagled_image_classifier(image_domain_specific)
+
+        cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
+
+        cmcl2 = self.cross_modal_classifer_loss(classification_features_i, label_positive)
+
+        cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
 
         np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
         print("cmd: ", cmd.detach().cpu().numpy(),

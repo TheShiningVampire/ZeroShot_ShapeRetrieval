@@ -8,8 +8,8 @@ defaults:
   - model: triplet_SHREC.yaml
   - callbacks: default.yaml
   - logger: null # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
+  # - trainer: gpu.yaml
   - trainer: gpu.yaml
-  # - trainer: ddp.yaml
   - paths: triplet.yaml
   - extras: default.yaml
   - hydra: default.yaml
