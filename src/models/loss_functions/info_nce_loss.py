@@ -25,6 +25,12 @@ class Info_NCE_Loss(torch.nn.Module):
         # cross_modal_triplet_loss = torch.mean(torch.max(pos_cosine_distance**2 - neg_cosine_distance**2 + self.margin, torch.tensor(0.0).cuda()))
 
         # num = exp(pos_shape_feat.img_feat)
+
+        # Normalizing the features
+        pos_shape_feat = F.normalize(pos_shape_feat, p=2, dim=1, eps=1e-6)
+        img_feat = F.normalize(img_feat, p=2, dim=1, eps=1e-6)
+        neg_shape_feat = F.normalize(neg_shape_feat, p=2, dim=1, eps=1e-6)
+
         num = torch.exp(torch.bmm(pos_shape_feat.unsqueeze(1), img_feat.unsqueeze(2))).squeeze(2).squeeze(1)
         den = num + torch.exp(torch.bmm(neg_shape_feat.unsqueeze(1), img_feat.unsqueeze(2))).squeeze(2).squeeze(1)
         info_nce_loss = -torch.log(num/den)

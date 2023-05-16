@@ -102,8 +102,8 @@ class DomainDisentangledModule(LightningModule):
         ## TODO: remove this line while training
         self.mvtn.requires_grad_(False)
         self.mvtn_renderer.requires_grad_(False)
-        # self.mvnetwork.requires_grad_(False)
-        # self.image_feature_extractor.requires_grad_(False)
+        self.mvnetwork.requires_grad_(False)
+        self.image_feature_extractor.requires_grad_(False)
 
         self.domain_disentagled_image_feat = domain_disentagled_image_feat
         self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
@@ -254,9 +254,9 @@ class DomainDisentangledModule(LightningModule):
         pred_neg = (similarity_neg < 0.5)
         gt_neg = torch.ones_like(pred_neg)
 
-        # Print prediction and ground truth for negative model
-        print("pred_neg: ", pred_neg.detach().cpu().numpy())
-        print("gt_neg: ", gt_neg.detach().cpu().numpy())
+        # # Print prediction and ground truth for negative model
+        # print("pred_neg: ", pred_neg.detach().cpu().numpy())
+        # print("gt_neg: ", gt_neg.detach().cpu().numpy())
 
         return loss, pred_pos, gt_pos, pred_neg, gt_neg
 

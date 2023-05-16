@@ -11,10 +11,19 @@ class Domain_Disentangled_Img_Classifier(nn.Module):
 
         # Replace the last layer with a new one
         self.image_classifier = nn.Sequential(
+                                    nn.Linear(1024, 1024),
+                                    nn.ReLU(),
+                                    nn.Dropout(p=0.2),
                                     nn.Linear(1024, 512),
                                     nn.ReLU(),
                                     nn.Dropout(p=0.2),
+                                    nn.Linear(512, 512),
+                                    nn.ReLU(),
+                                    nn.Dropout(p=0.2),
                                     nn.Linear(512, 256),
+                                    nn.ReLU(),
+                                    nn.Dropout(p=0.2),
+                                    nn.Linear(256, 256),
                                     nn.ReLU(),
                                     nn.Dropout(p=0.2),
                                     nn.Linear(256, num_classes),
