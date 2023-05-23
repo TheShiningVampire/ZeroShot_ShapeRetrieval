@@ -156,3 +156,5 @@ data/
 0_1.png
 configs/train.yaml
 configs/model/triplet_SHREC.yaml
+configs/model/triplet_SHREC.yaml
+configs/paths/triplet.yaml
