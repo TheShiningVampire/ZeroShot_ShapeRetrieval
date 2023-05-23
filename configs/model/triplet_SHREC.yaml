@@ -44,8 +44,16 @@ domain_disentagled_image_feat:
   _target_: src.models.components.domain_disentangled_image_feat.Domain_Disentangled_Img_Feature
   num_classes: 20
 
+domain_disentagled_image_classifier:
+  _target_: src.models.components.domain_disentangled_image_classifier.Domain_Disentangled_Img_Classifier
+  num_classes: 20
+
 domain_disentagled_shape_feat:
   _target_: src.models.components.domain_disentangled_shape_feat.Domain_Disentangled_Shape_Feature
+  num_classes: 20
+
+domain_disentagled_shape_classifier:
+  _target_: src.models.components.domain_disentangled_shape_classifier.Domain_Disentangled_Shape_Classifier
   num_classes: 20
 
 domain_disentangled_semantic_encoder:
@@ -55,9 +63,12 @@ domain_disentangled_semantic_encoder:
 cross_modal_latent_loss:
   _target_: src.models.loss_functions.cross_modal_latent_loss.Cross_Modal_Latent_Loss
 
-cross_modal_triplet_loss:
-  _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
-  margin: 1.0
+# cross_modal_triplet_loss:
+#   _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
+#   margin: 1.0
+
+info_nce_loss:
+  _target_: src.models.loss_functions.info_nce_loss.Info_NCE_Loss
 
 cross_modal_classifer_loss:
   _target_: src.models.loss_functions.cross_modal_classification.Cross_Modal_Classification_Loss
@@ -72,6 +83,6 @@ image_network_weights: /home/SharedData/Vinit/Saved_Weights/Img_Feature_Extracto
 
 shape_network_weights: /home/SharedData/Vinit/Saved_Weights/Shape_Featue_Extractor/weight.ckpt
 
-lambda1: 0.2
+lambda1: 1.0
 lambda2: 1.0
-lambda3: 0.5
+lambda3: 1.0
