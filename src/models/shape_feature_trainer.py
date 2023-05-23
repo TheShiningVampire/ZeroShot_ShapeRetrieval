@@ -13,6 +13,8 @@ from src.utils.ops import regualarize_rendered_views
 from src.models.loss_functions.contrastive_loss import ContrastiveLoss
 import torch.nn.functional as F
 
+import numpy as np
+
 
 class SHREC_SHAPE_Feat_Trainer(LightningModule):
     """
@@ -91,6 +93,11 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
 
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
+
+        np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+        print(
+            "loss: ", loss.detach().cpu().numpy()
+          )
 
         # log train metrics
         acc = self.train_acc(preds, targets)

@@ -35,7 +35,7 @@ class Shape_Feature_Extractor(nn.Module):
         input = self.ReLU2(input)
         input = self.Dropout2(input)
         input = self.Linear3(input)
-        input = self.log_softmax(input).clone()
+        # input = self.log_softmax(input).clone()
 
         input = unbatch_tensor(input, B, dim=1, unsqueeze=True)
         output = torch.max(input, dim=1)[0]

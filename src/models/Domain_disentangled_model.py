@@ -73,29 +73,29 @@ class DomainDisentangledModule(LightningModule):
         # mvnetwork = torchvision.models.__dict__["resnet{}".format(mvnet_depth)](pretrained=True)
     
         # image_feature_extractor = torchvision.models.__dict__["resnet{}".format(mvnet_depth)]()
-        image_feature_extractor = image_feature_network
+        # image_feature_extractor = image_feature_network
 
         mvnetwork = shape_feature_network
-        image_weights = torch.load(image_network_weights)["state_dict"]
+        # image_weights = torch.load(image_network_weights)["state_dict"]
         shape_weights = torch.load(shape_network_weights)["state_dict"]
 
         # Get rid of the "net." prefix in the weights
         # image_weights = {k[10:]: v for k, v in image_weights.items()}
-        image_weights = {k[4:]: v for k, v in image_weights.items()}
+        # image_weights = {k[4:]: v for k, v in image_weights.items()}
 
         # Get rid of the keys that have 'mvtn' in them
         shape_weights = {k: v for k, v in shape_weights.items() if "mvtn" not in k[:4]}
         shape_weights = {k[4:]: v for k, v in shape_weights.items()}
 
         # Load the weights
-        image_feature_extractor.load_state_dict(image_weights, strict=False)
+        # image_feature_extractor.load_state_dict(image_weights, strict=False)
         mvnetwork.load_state_dict(shape_weights, strict=False)
 
 
         self.mvnetwork = torch.nn.Sequential(*list(mvnetwork.children()))
         # self.image_feature_extractor = torch.nn.Sequential(*list(image_feature_extractor.children())[:-1])
         # self.image_feature_extractor = torch.nn.Sequential(*list(image_feature_extractor.children))
-        self.image_feature_extractor = image_feature_extractor
+        # self.image_feature_extractor = image_feature_extractor
 
 
 
@@ -103,15 +103,15 @@ class DomainDisentangledModule(LightningModule):
         self.mvtn.requires_grad_(False)
         self.mvtn_renderer.requires_grad_(False)
         self.mvnetwork.requires_grad_(False)
-        self.image_feature_extractor.requires_grad_(False)
+        # self.image_feature_extractor.requires_grad_(False)
 
-        self.domain_disentagled_image_feat = domain_disentagled_image_feat
-        self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
+        # self.domain_disentagled_image_feat = domain_disentagled_image_feat
+        # self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
 
         self.domain_disentagled_shape_feat = domain_disentagled_shape_feat
         self.domain_disentagled_shape_classifier = domain_disentagled_shape_classifier
 
-        self.domain_disentangled_semantic_encoder = domain_disentangled_semantic_encoder
+        # self.domain_disentangled_semantic_encoder = domain_disentangled_semantic_encoder
 
         # loss function
         self.cross_modal_latent_loss = cross_modal_latent_loss
@@ -129,7 +129,7 @@ class DomainDisentangledModule(LightningModule):
         self.val_acc_best = MaxMetric()
         self.val_loss_best = MinMetric()
 
-    def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative):
+    def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative, label_positive):
         c_batch_size = len(mesh_positive)
 
         with torch.no_grad():
@@ -152,32 +152,55 @@ class DomainDisentangledModule(LightningModule):
         shape_features_p = torch.max(shape_features_p, dim=1)[0]
 
 
-        # 2048 dimensional shape features for negative model
-        B, M, C, H, W = rendered_images_n.shape
-        input_n = batch_tensor(rendered_images_n, dim=1,squeeze=True)
-        input_n = input_n.type(torch.cuda.FloatTensor)
-        shape_features_n = self.mvnetwork(input_n)
-        shape_features_n = shape_features_n.squeeze()
+        # # 2048 dimensional shape features for negative model
+        # B, M, C, H, W = rendered_images_n.shape
+        # input_n = batch_tensor(rendered_images_n, dim=1,squeeze=True)
+        # input_n = input_n.type(torch.cuda.FloatTensor)
+        # shape_features_n = self.mvnetwork(input_n)
+        # shape_features_n = shape_features_n.squeeze()
 
-        shape_features_n = unbatch_tensor(shape_features_n, B, dim=1, unsqueeze=True)
-        shape_features_n = torch.max(shape_features_n, dim=1)[0]
+        # shape_features_n = unbatch_tensor(shape_features_n, B, dim=1, unsqueeze=True)
+        # shape_features_n = torch.max(shape_features_n, dim=1)[0]
 
-        # # 2048 dimensional image features
-        image_features = self.image_feature_extractor(image)
+        # # # 2048 dimensional image features
+        # image_features = self.image_feature_extractor(image)
             
         # TODO: remove this line while training
         # shape_features = shape_features.unsqueeze(0)
 
         pos_model_domain_specific, pos_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_p)
-        neg_model_domain_specific, neg_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_n)
-        image_domain_specific, image_domain_inv = self.domain_disentagled_image_feat(image_features)
-        semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
+        # neg_model_domain_specific, neg_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_n)
+        # image_domain_specific, image_domain_inv = self.domain_disentagled_image_feat(image_features)
+        # semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
 
 
-        return (pos_model_domain_specific, pos_model_domain_inv), \
-                (image_domain_specific, image_domain_inv), \
-                (neg_model_domain_specific, neg_model_domain_inv), \
-                semantic_features
+        # return (pos_model_domain_specific, pos_model_domain_inv)
+        #         # , \
+        #         # (image_domain_specific, image_domain_inv), \
+        #         # (neg_model_domain_specific, neg_model_domain_inv), \
+        #         # semantic_features
+
+        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_specific)
+
+        cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
+
+        np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+        print(
+            # "cmd: ", cmd.detach().cpu().numpy(),
+        #   "cmtr: ", cmtr.detach().cpu().numpy(),
+          "cmcl1: ", cmcl1.detach().cpu().numpy(), 
+        #   "cmcl2: ", cmcl2.detach().cpu().numpy(), 
+        #   "cmcl3: ", cmcl3.detach().cpu().numpy()
+          )
+
+        # loss = (self.hparams.lambda1* cmd) +\
+        #         (self.hparams.lambda2* cmtr) +\
+        #         (self.hparams.lambda3* (cmcl1 + cmcl2 + cmcl3))
+        
+        loss = cmcl1
+
+        return loss
+
 
 
     def on_train_start(self):
@@ -191,102 +214,115 @@ class DomainDisentangledModule(LightningModule):
         mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
         mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
 
-        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+        # pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-        # pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
-        pos_model_domain_specific, _ = pos_model_feat           # 1024 dim. features
-        # image_domain_specific, image_domain_inv = img_feat
-        image_domain_specific, _ = img_feat                     # 1024 dim. features
-        # neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
-        neg_model_domain_specific, _ = neg_model_feat           # 1024 dim. features
+        # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+
+        # # pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
+        # pos_model_domain_specific, _ = pos_model_feat           # 1024 dim. features
+        # # # image_domain_specific, image_domain_inv = img_feat
+        # # image_domain_specific, _ = img_feat                     # 1024 dim. features
+        # # # neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        # # neg_model_domain_specific, _ = neg_model_feat           # 1024 dim. features
         
-        cmd = self.cross_modal_latent_loss(pos_model_domain_specific, image_domain_specific, semantic_feat)
+        # # cmd = self.cross_modal_latent_loss(pos_model_domain_specific, image_domain_specific, semantic_feat)
 
-        cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
-        image_domain_specific, neg_model_domain_specific)
+        # # cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
+        # # image_domain_specific, neg_model_domain_specific)
         
-        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_specific)
+        # classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_specific)
 
-        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_specific)
+        # # classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_specific)
 
-        classification_features_i = self.domain_disentagled_image_classifier(image_domain_specific)
+        # # classification_features_i = self.domain_disentagled_image_classifier(image_domain_specific)
 
-        cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
+        # cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
 
-        cmcl2 = self.cross_modal_classifer_loss(classification_features_i, label_positive)
+        # # cmcl2 = self.cross_modal_classifer_loss(classification_features_i, label_positive)
 
-        cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
+        # # cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
 
-        np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
-        print("cmd: ", cmd.detach().cpu().numpy(),
-          "cmtr: ", cmtr.detach().cpu().numpy(),
-          "cmcl1: ", cmcl1.detach().cpu().numpy(), 
-          "cmcl2: ", cmcl2.detach().cpu().numpy(), 
-          "cmcl3: ", cmcl3.detach().cpu().numpy()
-          )
+        # np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+        # print(
+        #     # "cmd: ", cmd.detach().cpu().numpy(),
+        # #   "cmtr: ", cmtr.detach().cpu().numpy(),
+        #   "cmcl1: ", cmcl1.detach().cpu().numpy(), 
+        # #   "cmcl2: ", cmcl2.detach().cpu().numpy(), 
+        # #   "cmcl3: ", cmcl3.detach().cpu().numpy()
+        #   )
 
-        loss = (self.hparams.lambda1* cmd) +\
-                (self.hparams.lambda2* cmtr) +\
-                (self.hparams.lambda3* (cmcl1 + cmcl2 + cmcl3))
+        # # loss = (self.hparams.lambda1* cmd) +\
+        # #         (self.hparams.lambda2* cmtr) +\
+        # #         (self.hparams.lambda3* (cmcl1 + cmcl2 + cmcl3))
+        
+        # loss = cmcl1
 
-        # Calculate similarity using cosine similarity between the image and positive model features
-        similarity_pos = F.cosine_similarity(pos_model_domain_specific, image_domain_specific, dim=1)
+        # # # Calculate similarity using cosine similarity between the image and positive model features
+        # # similarity_pos = F.cosine_similarity(pos_model_domain_specific, image_domain_specific, dim=1)
 
-        # Calculate similarity using cosine similarity between the image and negative model features
-        similarity_neg = F.cosine_similarity(neg_model_domain_specific, image_domain_specific, dim=1)
+        # # # Calculate similarity using cosine similarity between the image and negative model features
+        # # similarity_neg = F.cosine_similarity(neg_model_domain_specific, image_domain_specific, dim=1)
 
-        # # Print the negative domain specific features
-        # print("Negative domain specific features: ", neg_model_domain_specific.detach().cpu().numpy())
+        # # # Print the negative domain specific features
+        # # print("Negative domain specific features: ", neg_model_domain_specific.detach().cpu().numpy())
 
-        # ## Positive similarity
-        # print("similarity_pos: ", similarity_pos.detach().cpu().numpy())
+        # # ## Positive similarity
+        # # print("similarity_pos: ", similarity_pos.detach().cpu().numpy())
 
-        # ## Print the similarity values for negative models
-        # print("similarity_neg: ", similarity_neg.detach().cpu().numpy())        
+        # # ## Print the similarity values for negative models
+        # # print("similarity_neg: ", similarity_neg.detach().cpu().numpy())        
 
-        # Check if the similarity is above the threshold
-        pred_pos = (similarity_pos < 0.5)
+        # # # Check if the similarity is above the threshold
+        # # pred_pos = (similarity_pos < 0.5)
 
-        # Ground truth is that the image is from the same domain as the positive model
-        gt_pos = torch.zeros_like(pred_pos)
+        # # # Ground truth is that the image is from the same domain as the positive model
+        # # gt_pos = torch.zeros_like(pred_pos)
 
-        # For negative model
-        pred_neg = (similarity_neg < 0.5)
-        gt_neg = torch.ones_like(pred_neg)
+        # # # For negative model
+        # # pred_neg = (similarity_neg < 0.5)
+        # # gt_neg = torch.ones_like(pred_neg)
 
-        # # Print prediction and ground truth for negative model
-        # print("pred_neg: ", pred_neg.detach().cpu().numpy())
-        # print("gt_neg: ", gt_neg.detach().cpu().numpy())
+        # # # # Print prediction and ground truth for negative model
+        # # # print("pred_neg: ", pred_neg.detach().cpu().numpy())
+        # # # print("gt_neg: ", gt_neg.detach().cpu().numpy())
 
-        return loss, pred_pos, gt_pos, pred_neg, gt_neg
+        # # return loss, pred_pos, gt_pos, pred_neg, gt_neg
+
+        loss = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative, label_positive)
+        
+        return loss
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        # loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        loss = self.step(batch)
 
-        # log train metrics
-        acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
+        # # log train metrics
+        # acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
         self.log("train/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        # self.log("train/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
 
-        # we can return here dict with any tensors
-        # and then read it in some callback or in `training_epoch_end()` below
-        # remember to always return loss from `training_step()` or else backpropagation will fail!
-        return {"loss": loss, "pred_positive": pred_pos, "label_positive": gt_pos, "pred_negative": pred_neg, "label_negative": gt_neg}
-
+        # # we can return here dict with any tensors
+        # # and then read it in some callback or in `training_epoch_end()` below
+        # # remember to always return loss from `training_step()` or else backpropagation will fail!
+        # return {"loss": loss, "pred_positive": pred_pos, "label_positive": gt_pos, "pred_negative": pred_neg, "label_negative": gt_neg}
+        return {"loss": loss}
+    
     def training_epoch_end(self, outputs: List[Any]):
         # `outputs` is a list of dicts returned from `training_step()`
         self.train_acc.reset()
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        # loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        loss = self.step(batch)
 
-        # log val metrics
-        acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
+        # # log val metrics
+        # acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
 
         self.log("val/loss", loss, on_step=False, on_epoch=True, prog_bar=False)
-        self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+        # self.log("val/acc", acc, on_step=False, on_epoch=True, prog_bar=True)
 
-        return {"loss": loss, "pred_positive": pred_pos, "label_positive": gt_pos, "pred_negative": pred_neg, "label_negative": gt_neg}
+        # return {"loss": loss, "pred_positive": pred_pos, "label_positive": gt_pos, "pred_negative": pred_neg, "label_negative": gt_neg}
+        return {"loss": loss}
 
     def validation_epoch_end(self, outputs: List[Any]):
         # acc = self.val_acc.compute()  # get val accuracy from current epoch
