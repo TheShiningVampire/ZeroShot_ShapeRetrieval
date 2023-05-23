@@ -1,0 +1,22 @@
+# path to root directory
+# this requires PROJECT_ROOT environment variable to exist
+# PROJECT_ROOT is inferred and set by pyrootutils package in `train.py` and `eval.py`
+root_dir: ${oc.env:PROJECT_ROOT}
+
+# path to data directory
+# data_dir: /home/SharedData/Vinit/pix3d_preprocessed/ # for pix3d
+data_dir: /home/dgxadmin/vinit/Data/ZERO_SHOT_DATASET_SHREC13_SMALL  # for shrec13
+
+# path to logging directory
+log_dir: /home/dgxadmin/vinit/logs
+
+# path to output directory, created dynamically by hydra
+# path generation pattern is specified in `configs/hydra/default.yaml`
+# use it to store all files generated during the run, like ckpts and metrics
+output_dir: /home/dgxadmin/vinit/logs
+
+# path to working directory
+work_dir: ${hydra:runtime.cwd}
+
+# Word2Vec path
+w2v_path: word2vec/w2v.npz
