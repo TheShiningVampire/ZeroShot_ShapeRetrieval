@@ -100,9 +100,9 @@ class DomainDisentangledModule(LightningModule):
 
 
         ## TODO: remove this line while training
-        self.mvtn.requires_grad_(False)
-        self.mvtn_renderer.requires_grad_(False)
-        self.mvnetwork.requires_grad_(False)
+        # self.mvtn.requires_grad_(False)
+        # self.mvtn_renderer.requires_grad_(False)
+        # self.mvnetwork.requires_grad_(False)
         # self.image_feature_extractor.requires_grad_(False)
 
         # self.domain_disentagled_image_feat = domain_disentagled_image_feat
@@ -120,10 +120,10 @@ class DomainDisentangledModule(LightningModule):
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
-        self.train_acc = Accuracy()
-        self.val_acc = Accuracy()
+        self.train_acc = Accuracy(task="multiclass", num_classes=20)
+        self.val_acc = Accuracy(task="multiclass", num_classes=20)
         self.val_loss = ContrastiveLoss()
-        self.test_acc = Accuracy()
+        self.test_acc = Accuracy(task="multiclass", num_classes=20)
 
         # for logging best so far validation accuracy
         self.val_acc_best = MaxMetric()
@@ -132,14 +132,13 @@ class DomainDisentangledModule(LightningModule):
     def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative, label_positive):
         c_batch_size = len(mesh_positive)
 
-        with torch.no_grad():
-            azim_p, elev_p, dist_p = self.mvtn(points_positive, c_batch_size=c_batch_size)
-            rendered_images_p, _ = self.mvtn_renderer(mesh_positive, points_positive, azim=azim_p, elev=elev_p, dist=dist_p)
-            rendered_images_p = regualarize_rendered_views(rendered_images_p, 0.0, False, 0.3)
+        azim_p, elev_p, dist_p = self.mvtn(points_positive, c_batch_size=c_batch_size)
+        rendered_images_p, _ = self.mvtn_renderer(mesh_positive, points_positive, azim=azim_p, elev=elev_p, dist=dist_p)
+        rendered_images_p = regualarize_rendered_views(rendered_images_p, 0.0, False, 0.3)
 
-            azim_n, elev_n, dist_n = self.mvtn(points_negative, c_batch_size=c_batch_size)
-            rendered_images_n, _ = self.mvtn_renderer(mesh_negative, points_negative, azim=azim_n, elev=elev_n, dist=dist_n)
-            rendered_images_n = regualarize_rendered_views(rendered_images_n, 0.0, False, 0.3)
+        azim_n, elev_n, dist_n = self.mvtn(points_negative, c_batch_size=c_batch_size)
+        rendered_images_n, _ = self.mvtn_renderer(mesh_negative, points_negative, azim=azim_n, elev=elev_n, dist=dist_n)
+        rendered_images_n = regualarize_rendered_views(rendered_images_n, 0.0, False, 0.3)
 
         # 2048 dimensional shape features for positive model
         B, M, C, H, W = rendered_images_p.shape

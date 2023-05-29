@@ -4,7 +4,7 @@ optimizer:
   _target_: torch.optim.Adam
   _partial_: true
   lr: 0.0001
-  weight_decay: 0.001
+  weight_decay: 0.00
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -79,9 +79,9 @@ shape_feature_network:
 image_feature_network:
   _target_: src.models.components.image_feature_extractor_2.Img_Feature_Extractor
 
-image_network_weights: /home/SharedData/Vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
+image_network_weights: /home/dgxadmin/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
 
-shape_network_weights: /home/SharedData/Vinit/Saved_Weights/Shape_Featue_Extractor/weight.ckpt
+shape_network_weights: /home/dgxadmin/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
 
 lambda1: 1.0
 lambda2: 1.0

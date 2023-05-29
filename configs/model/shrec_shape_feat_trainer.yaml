@@ -15,6 +15,7 @@ scheduler:
 
 net:
   _target_: src.models.components.shape_feature_extractor.Shape_Feature_Extractor
+  model_choice: 2
 
 multi_view_net:
   _target_: src.models.components.mvtn.MVTN

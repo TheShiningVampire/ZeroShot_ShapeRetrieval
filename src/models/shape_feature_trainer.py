@@ -62,9 +62,9 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
-        self.train_acc = Accuracy()
-        self.val_acc = Accuracy()
-        self.test_acc = Accuracy()
+        self.train_acc = Accuracy(task="multiclass", num_classes=20)
+        self.val_acc = Accuracy(task="multiclass", num_classes=20)
+        self.test_acc = Accuracy(task="multiclass", num_classes=20)
 
         # for logging best so far validation accuracy
         self.val_acc_best = MaxMetric()
@@ -94,10 +94,10 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
 
-        np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
-        print(
-            "loss: ", loss.detach().cpu().numpy()
-          )
+        # np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+        # print(
+        #     "loss: ", loss.detach().cpu().numpy()
+        #   )
 
         # log train metrics
         acc = self.train_acc(preds, targets)

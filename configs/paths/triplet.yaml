@@ -5,15 +5,15 @@ root_dir: ${oc.env:PROJECT_ROOT}
 
 # path to data directory
 # data_dir: /home/SharedData/Vinit/pix3d_preprocessed/ # for pix3d
-data_dir: /home/SharedData/Vinit/ZERO_SHOT_DATASET_SHREC13_SMALL/  # for shrec13
+data_dir: /home/dgxadmin/vinit/Data/ZERO_SHOT_DATASET_SHREC13_SMALL  # for shrec13
 
 # path to logging directory
-log_dir: /home/SharedData/Vinit/logs/phase2/
+log_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
-output_dir: /home/SharedData/Vinit/logs/phase2/
+output_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

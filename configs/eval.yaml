@@ -15,4 +15,4 @@ task_name: "eval"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /home/SharedData/Vinit/logs/SHREC13_Siamese_debugged/checkpoints/epoch_050.ckpt
+# ckpt_path: /home/SharedData/Vinit/logs/SHREC13_Siamese_debugged/checkpoints/epoch_050.ckpt

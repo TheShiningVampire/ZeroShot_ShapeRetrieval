@@ -1,6 +1,6 @@
 _target_: src.datamodules.SHREC13_shapes.SHREC13_Shapes_Module
 data_dir: ${paths.data_dir}
-batch_size: 12
+batch_size: 96
 num_workers: 0
 pin_memory: False
 data_mean: [0.9799, 0.9799, 0.9799]
