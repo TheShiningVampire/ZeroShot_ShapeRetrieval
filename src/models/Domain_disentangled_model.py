@@ -299,7 +299,7 @@ class DomainDisentangledModule(LightningModule):
         # loss = self.val_loss.forward()  # get val loss from current epoch
         # self.val_loss_best.update(loss)  # update best val loss
         # self.log("val/loss_best", self.val_loss_best.compute(), on_epoch=True, prog_bar=True)
-        self.val_loss.reset()
+        self.val_acc.reset()
         
 
     def test_step(self, batch: Any, batch_idx: int):
