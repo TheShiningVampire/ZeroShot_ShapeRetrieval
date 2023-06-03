@@ -83,6 +83,6 @@ image_network_weights: /home/dgxadmin/vinit/Saved_Weights/Img_Feature_Extractor/
 
 shape_network_weights: /home/dgxadmin/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
 
-lambda1: 1.0
+lambda1: 0.25
 lambda2: 1.0
 lambda3: 1.0

@@ -15,3 +15,10 @@ CUDA_VISIBLE_DEVICES=1 python src/train.py logger=wandb trainer.max_epochs=100 m
 CUDA_VISIBLE_DEVICES=5 python src/train.py logger=wandb trainer.max_epochs=100 model.net.model_choice=2 paths.log_dir="/home/dgxadmin/vinit/logs/shape_features_5layers_2_1/" paths.output_dir="/home/dgxadmin/vinit/logs/shape_features_5layers_2_1/" ckpt_path="/home/dgxadmin/vinit/logs/shape_features_5layers_2/checkpoints/last.ckpt"
 
 CUDA_VISIBLE_DEVICES=4 python src/train.py logger=wandb trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/final_test_1/" paths.output_dir="/home/dgxadmin/vinit/logs/final_test_1/" 
+
+
+CUDA_VISIBLE_DEVICES=2 python src/train.py logger=wandb trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/final_1/" paths.output_dir="/home/dgxadmin/vinit/logs/final_1/" 
+
+CUDA_VISIBLE_DEVICES=2 python src/train.py trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/temp_1/" paths.output_dir="/home/dgxadmin/vinit/logs/temp_1/" logger=wandb
+
+CUDA_VISIBLE_DEVICES=1 python src/train.py logger=wandb trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/final_2/" paths.output_dir="/home/dgxadmin/vinit/logs/final_2/" ckpt_path="/home/dgxadmin/vinit/logs/final_1/checkpoints/last.ckpt"
