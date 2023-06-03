@@ -1,5 +1,6 @@
 _target_: src.datamodules.Triplet_SHREC13_datamodule.SHREC13_DataModule
 data_dir: ${paths.data_dir}
+# batch_size: 4
 batch_size: 48
 num_workers: 0
 pin_memory: False

@@ -47,6 +47,7 @@ class DomainDisentangledModule(LightningModule):
         # cross_modal_triplet_loss: torch.nn.Module,
         info_nce_loss: torch.nn.Module,
         cross_modal_classifer_loss: torch.nn.Module,
+        feature_distance_loss: torch.nn.Module,
         image_feature_network: torch.nn.Module,
         shape_feature_network: torch.nn.Module,
         image_network_weights: str,
@@ -56,6 +57,7 @@ class DomainDisentangledModule(LightningModule):
         lambda1: float,
         lambda2: float,
         lambda3: float,
+        lambda4: float,
     ):
         super().__init__()
 
@@ -117,6 +119,7 @@ class DomainDisentangledModule(LightningModule):
         self.cross_modal_latent_loss = cross_modal_latent_loss
         self.cross_modal_triplet_loss = info_nce_loss
         self.cross_modal_classifer_loss = cross_modal_classifer_loss
+        self.feature_distance_loss = feature_distance_loss
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
@@ -196,23 +199,23 @@ class DomainDisentangledModule(LightningModule):
 
         # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-        # # pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
-        pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
-        # # # image_domain_specific, image_domain_inv = img_feat
-        image_domain_specific, _ = img_feat                     # 512 dim. features
-        # # # neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
-        neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
+        pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
+        # pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
+        image_domain_specific, image_domain_inv = img_feat
+        # image_domain_specific, _ = img_feat                     # 512 dim. features
+        neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        # neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
         
         cmd = self.cross_modal_latent_loss(pos_model_domain_specific, image_domain_specific, semantic_feat)
 
         cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
         image_domain_specific, neg_model_domain_specific)
         
-        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_specific)
+        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_inv)
 
-        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_specific)
+        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_inv)
 
-        classification_features_i = self.domain_disentagled_image_classifier(image_domain_specific)
+        classification_features_i = self.domain_disentagled_image_classifier(image_domain_inv)
 
         cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
 
@@ -220,20 +223,31 @@ class DomainDisentangledModule(LightningModule):
 
         cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
 
+        # feature distance loss: dot product between domain specific features and domain invariant features
+        fdl1 = self.feature_distance_loss(pos_model_domain_specific, pos_model_domain_inv)
+        fdl2 = self.feature_distance_loss(image_domain_specific, image_domain_inv)
+        fdl3 = self.feature_distance_loss(neg_model_domain_specific, neg_model_domain_inv)
+
+
+        
         np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
         print(
             "cmd: ", cmd.detach().cpu().numpy(),
           "cmtr: ", cmtr.detach().cpu().numpy(),
           "cmcl1: ", cmcl1.detach().cpu().numpy(), 
           "cmcl2: ", cmcl2.detach().cpu().numpy(), 
-          "cmcl3: ", cmcl3.detach().cpu().numpy()
+          "cmcl3: ", cmcl3.detach().cpu().numpy(),
+            "fdl1: ", fdl1.detach().cpu().numpy(),
+            "fdl2: ", fdl2.detach().cpu().numpy(),
+            "fdl3: ", fdl3.detach().cpu().numpy()
           )
+        
 
         loss = (self.hparams.lambda1* cmd) +\
                 (self.hparams.lambda2* cmtr) +\
-                (self.hparams.lambda3* (cmcl1 + cmcl2 + cmcl3))
+                (self.hparams.lambda3* (cmcl1 + cmcl2 + cmcl3)) +\
+                (self.hparams.lambda4* (fdl1 + fdl2 + fdl3))
         
-        # loss = cmcl1
 
         # Calculate similarity using cosine similarity between the image and positive model features
         similarity_pos = F.cosine_similarity(pos_model_domain_specific, image_domain_specific, dim=1)

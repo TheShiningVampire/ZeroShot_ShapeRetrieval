@@ -22,3 +22,5 @@ CUDA_VISIBLE_DEVICES=2 python src/train.py logger=wandb trainer.max_epochs=100 p
 CUDA_VISIBLE_DEVICES=2 python src/train.py trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/temp_1/" paths.output_dir="/home/dgxadmin/vinit/logs/temp_1/" logger=wandb
 
 CUDA_VISIBLE_DEVICES=1 python src/train.py logger=wandb trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/final_2/" paths.output_dir="/home/dgxadmin/vinit/logs/final_2/" ckpt_path="/home/dgxadmin/vinit/logs/final_1/checkpoints/last.ckpt"
+
+CUDA_VISIBLE_DEVICES=1 python src/train.py logger=wandb trainer.max_epochs=100 paths.log_dir="/home/dgxadmin/vinit/logs/final_3/" paths.output_dir="/home/dgxadmin/vinit/logs/final_3/" 
