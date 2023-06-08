@@ -1,5 +1,5 @@
-conda create --name pytorch3d python=3.8
-conda activate pytorch3d
+# conda create --name pytorch3d python=3.8
+# conda activate pytorch3d
 conda install pytorch=1.10.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch -c conda-forge
 conda install -c fvcore -c iopath -c conda-forge fvcore iopath
 conda install -c pytorch3d pytorch3d
