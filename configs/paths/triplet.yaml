@@ -3,17 +3,23 @@
 # PROJECT_ROOT is inferred and set by pyrootutils package in `train.py` and `eval.py`
 root_dir: ${oc.env:PROJECT_ROOT}
 
+# project_dir: /home/dgxadmin/vinit
+
+# project_dir: /mnt/elk/data/valaybun/other_users/vinit
 # path to data directory
 # data_dir: /home/SharedData/Vinit/pix3d_preprocessed/ # for pix3d
-data_dir: /home/dgxadmin/vinit/Data/ZERO_SHOT_DATASET_SHREC13_SMALL  # for shrec13
+# data_dir: /home/dgxadmin/vinit/Data/ZERO_SHOT_DATASET_SHREC13_SMALL  # for shrec13
+data_dir: /mnt/elk/data/valaybun/other_users/vinit/Data/ZERO_SHOT_DATASET_SHREC13_SMALL
 
 # path to logging directory
-log_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
+# log_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
+log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/final_6
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
-output_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
+# output_dir: /home/dgxadmin/vinit/logs/shape_features_3layers_1/
+output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/final_6
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

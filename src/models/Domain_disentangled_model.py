@@ -17,6 +17,10 @@ from src.models.loss_functions.contrastive_loss import ContrastiveLoss
 import torch.nn.functional as F
 from src.utils.utils import batch_tensor
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.manifold import TSNE
+
 class DomainDisentangledModule(LightningModule):
     """Example of LightningModule for MNIST classification.
 
@@ -44,8 +48,8 @@ class DomainDisentangledModule(LightningModule):
         domain_disentagled_shape_classifier: torch.nn.Module,
         domain_disentangled_semantic_encoder: torch.nn.Module,
         cross_modal_latent_loss: torch.nn.Module,
-        # cross_modal_triplet_loss: torch.nn.Module,
-        info_nce_loss: torch.nn.Module,
+        cross_modal_triplet_loss: torch.nn.Module,
+        # info_nce_loss: torch.nn.Module,
         cross_modal_classifer_loss: torch.nn.Module,
         feature_distance_loss: torch.nn.Module,
         image_feature_network: torch.nn.Module,
@@ -117,7 +121,7 @@ class DomainDisentangledModule(LightningModule):
 
         # loss function
         self.cross_modal_latent_loss = cross_modal_latent_loss
-        self.cross_modal_triplet_loss = info_nce_loss
+        self.cross_modal_triplet_loss = cross_modal_triplet_loss
         self.cross_modal_classifer_loss = cross_modal_classifer_loss
         self.feature_distance_loss = feature_distance_loss
 
@@ -131,6 +135,7 @@ class DomainDisentangledModule(LightningModule):
         # for logging best so far validation accuracy
         self.val_acc_best = MaxMetric()
         self.val_loss_best = MinMetric()
+
 
     def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative):
         c_batch_size = len(mesh_positive)
@@ -188,7 +193,7 @@ class DomainDisentangledModule(LightningModule):
         # so we need to make sure val_acc_best doesn't store accuracy from these checks
         self.val_loss_best.reset()
 
-    def step(self, batch: Any):
+    def step(self, batch: Any, val: bool = False):
         (positive_model, image, negative_model) = batch
         
         mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
@@ -278,6 +283,31 @@ class DomainDisentangledModule(LightningModule):
         # # # print("pred_neg: ", pred_neg.detach().cpu().numpy())
         # # # print("gt_neg: ", gt_neg.detach().cpu().numpy())
 
+        # If validation step, then plot the T-SNE plot of domain specific features for both positive model and image
+        # if val:
+            
+        # Consider only the points belonging to classes 0-9
+        pos_model_domain_specific_ts = pos_model_domain_specific[label_positive < 10]
+        image_domain_specific_ts = image_domain_specific[label_positive < 10]
+        label_positive_ts = label_positive[label_positive < 10]
+
+        # Compute tSNE embeddings
+        tsne = TSNE(n_components=2, perplexity=15)
+        tsne_pos_model_domain_specific = tsne.fit_transform(pos_model_domain_specific_ts.detach().cpu().numpy())
+        tsne_image_domain_specific = tsne.fit_transform(image_domain_specific_ts.detach().cpu().numpy())
+
+        # Plot the tSNE embeddings
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+
+        # Plot the tSNE embeddings for positive model as squares of different colors
+        sns.scatterplot(x=tsne_pos_model_domain_specific[:, 0], y=tsne_pos_model_domain_specific[:, 1], hue=label_positive_ts.detach().cpu().numpy(), ax=ax[0], legend="full", palette="bright")
+
+        # Plot the tSNE embeddings for image as plus sign of different colors
+        sns.scatterplot(x=tsne_image_domain_specific[:, 0], y=tsne_image_domain_specific[:, 1], hue=label_positive_ts.detach().cpu().numpy(), ax=ax[1], legend="full", palette="bright", marker="+")
+
+        # Save the plot
+        plt.savefig("results/tsne/tsne" + str(self.current_epoch) + ".png")
+
         return loss, pred_pos, gt_pos, pred_neg, gt_neg
 
     def training_step(self, batch: Any, batch_idx: int):
@@ -298,7 +328,7 @@ class DomainDisentangledModule(LightningModule):
         self.train_acc.reset()
 
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch, val=True) 
 
         # log val metrics
         acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
@@ -313,8 +343,7 @@ class DomainDisentangledModule(LightningModule):
         # loss = self.val_loss.forward()  # get val loss from current epoch
         # self.val_loss_best.update(loss)  # update best val loss
         # self.log("val/loss_best", self.val_loss_best.compute(), on_epoch=True, prog_bar=True)
-        self.val_acc.reset()
-        
+        self.val_acc.reset()        
 
     def test_step(self, batch: Any, batch_idx: int):
         # loss = self.step(batch)

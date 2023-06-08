@@ -63,15 +63,15 @@ domain_disentangled_semantic_encoder:
 cross_modal_latent_loss:
   _target_: src.models.loss_functions.cross_modal_latent_loss.Cross_Modal_Latent_Loss
 
-# cross_modal_triplet_loss:
-#   _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
-#   margin: 1.0
+cross_modal_triplet_loss:
+  _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
+  margin: 1.0
 
 feature_distance_loss:
   _target_: src.models.loss_functions.feature_distance_loss.Feature_Distance_Loss
 
-info_nce_loss:
-  _target_: src.models.loss_functions.info_nce_loss.Info_NCE_Loss
+# info_nce_loss:
+#   _target_: src.models.loss_functions.info_nce_loss.Info_NCE_Loss
 
 cross_modal_classifer_loss:
   _target_: src.models.loss_functions.cross_modal_classification.Cross_Modal_Classification_Loss
@@ -82,9 +82,11 @@ shape_feature_network:
 image_feature_network:
   _target_: src.models.components.image_feature_extractor_2.Img_Feature_Extractor
 
-image_network_weights: /home/dgxadmin/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
+# image_network_weights: /home/dgxadmin/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
+image_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
 
-shape_network_weights: /home/dgxadmin/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
+# shape_network_weights: /home/dgxadmin/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
+shape_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
 
 lambda1: 1.0
 lambda2: 3.0
