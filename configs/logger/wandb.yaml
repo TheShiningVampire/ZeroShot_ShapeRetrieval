@@ -7,10 +7,10 @@ wandb:
   offline: False
   id: null # pass correct id to resume experiment!
   anonymous: null # enable anonymous logging
-  project: "Baseline_Model_Siamese_Network"
+  project: "Complete_model"
   log_model: False # upload lightning ckpts
   prefix: "" # a string to put at the beginning of metric keys
   # entity: "" # set to name of your wandb team
   group: ""
-  tags: []
+  tags: [Full dataset, lr=0.00004]
   job_type: ""

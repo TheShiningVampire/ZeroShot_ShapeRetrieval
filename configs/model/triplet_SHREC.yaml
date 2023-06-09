@@ -3,8 +3,8 @@ _target_: src.models.Domain_disentangled_model.DomainDisentangledModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.0001
-  weight_decay: 0.00
+  lr: 0.00004
+  weight_decay: 0.000001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -82,10 +82,8 @@ shape_feature_network:
 image_feature_network:
   _target_: src.models.components.image_feature_extractor_2.Img_Feature_Extractor
 
-# image_network_weights: /home/dgxadmin/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
 image_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Img_Feature_Extractor/weight.ckpt
 
-# shape_network_weights: /home/dgxadmin/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
 shape_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Shape_Featue_Extractor/weight_2.ckpt
 
 lambda1: 1.0
