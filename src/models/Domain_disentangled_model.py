@@ -58,6 +58,7 @@ class DomainDisentangledModule(LightningModule):
         lambda2: float,
         lambda3: float,
         lambda4: float,
+        num_classes: int,
     ):
         super().__init__()
 
@@ -124,10 +125,10 @@ class DomainDisentangledModule(LightningModule):
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
-        self.train_acc = Accuracy(task="multiclass", num_classes=20)
-        self.val_acc = Accuracy(task="multiclass", num_classes=20)
+        self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
         self.val_loss = ContrastiveLoss()
-        self.test_acc = Accuracy(task="multiclass", num_classes=20)
+        self.test_acc = Accuracy(task="multiclass", num_classes=num_classes)
 
         # for logging best so far validation accuracy
         self.val_acc_best = MaxMetric()

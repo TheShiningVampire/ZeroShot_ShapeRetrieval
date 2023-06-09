@@ -42,23 +42,23 @@ feature_extractor_num_layers: 6
 
 domain_disentagled_image_feat:
   _target_: src.models.components.domain_disentangled_image_feat.Domain_Disentangled_Img_Feature
-  num_classes: 20
+  num_classes: 79
 
 domain_disentagled_image_classifier:
   _target_: src.models.components.domain_disentangled_image_classifier.Domain_Disentangled_Img_Classifier
-  num_classes: 20
+  num_classes: 79
 
 domain_disentagled_shape_feat:
   _target_: src.models.components.domain_disentangled_shape_feat.Domain_Disentangled_Shape_Feature
-  num_classes: 20
+  num_classes: 79
 
 domain_disentagled_shape_classifier:
   _target_: src.models.components.domain_disentangled_shape_classifier.Domain_Disentangled_Shape_Classifier
-  num_classes: 20
+  num_classes: 79
 
 domain_disentangled_semantic_encoder:
   _target_: src.models.components.domain_disentangled_semantic_encoder.Domain_Disentangled_Semantic_Encoder
-  num_classes: 20
+  num_classes: 79
 
 cross_modal_latent_loss:
   _target_: src.models.loss_functions.cross_modal_latent_loss.Cross_Modal_Latent_Loss
@@ -90,3 +90,6 @@ lambda1: 1.0
 lambda2: 3.0
 lambda3: 1.0
 lambda4: 2.0
+
+num_classes: 79
+
