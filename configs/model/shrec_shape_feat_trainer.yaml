@@ -16,6 +16,7 @@ scheduler:
 net:
   _target_: src.models.components.shape_feature_extractor.Shape_Feature_Extractor
   model_choice: 2
+  num_classes: 79
 
 multi_view_net:
   _target_: src.models.components.mvtn.MVTN
@@ -41,5 +42,6 @@ multi_view_renderer:
   points_per_pixel : 1 
   faces_per_pixel : 2
 
+num_classes: 79
 
 

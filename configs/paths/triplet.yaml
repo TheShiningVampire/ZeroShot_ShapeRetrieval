@@ -8,12 +8,14 @@ root_dir: ${oc.env:PROJECT_ROOT}
 data_dir: /mnt/elk/data/valaybun/other_users/vinit/Data/ZERO_SHOT_DATASET_SHREC13  # for shrec13
 
 # path to logging directory
-log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Full_dataset/run1/
+log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Complete_dataset/lr5e6/
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
-output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Full_dataset/run1/
+output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Complete_dataset/lr5e6/
+
+tsne_path: /mnt/elk/data/valaybun/other_users/vinit/logs/tsne_plots/Complete_model/Partial_dataset/lr5e6/
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

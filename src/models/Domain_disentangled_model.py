@@ -17,6 +17,12 @@ from src.models.loss_functions.contrastive_loss import ContrastiveLoss
 import torch.nn.functional as F
 from src.utils.utils import batch_tensor
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.manifold import TSNE
+
+import os
+
 class DomainDisentangledModule(LightningModule):
     """Example of LightningModule for MNIST classification.
 
@@ -59,6 +65,8 @@ class DomainDisentangledModule(LightningModule):
         lambda3: float,
         lambda4: float,
         num_classes: int,
+        tsne_path: str,
+        plot_tsne: bool,
     ):
         super().__init__()
 
@@ -134,6 +142,20 @@ class DomainDisentangledModule(LightningModule):
         self.val_acc_best = MaxMetric()
         self.val_loss_best = MinMetric()
 
+        # List for storing the features
+        self.pos_model_domain_specific = []
+        self.image_domain_specific = []
+
+        self.pos_model_domain_inv = []
+        self.image_domain_inv = []
+
+        self.class_labels = []
+
+        # Path to save the tSNE plots
+        self.tsne_path = tsne_path
+
+        self.plot_tsne = plot_tsne
+
     def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative):
         c_batch_size = len(mesh_positive)
 
@@ -190,7 +212,7 @@ class DomainDisentangledModule(LightningModule):
         # so we need to make sure val_acc_best doesn't store accuracy from these checks
         self.val_loss_best.reset()
 
-    def step(self, batch: Any):
+    def step(self, batch: Any, train: bool = True):
         (positive_model, image, negative_model) = batch
         
         mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
@@ -280,10 +302,20 @@ class DomainDisentangledModule(LightningModule):
         # # # print("pred_neg: ", pred_neg.detach().cpu().numpy())
         # # # print("gt_neg: ", gt_neg.detach().cpu().numpy())
 
+        if self.plot_tsne:
+            # If training then store features of positive model and image for classes 0-9
+            if train:
+                valid_indices = (label_positive < 10)
+                self.pos_model_domain_specific.append(pos_model_domain_specific[valid_indices].detach().cpu().numpy())
+                self.image_domain_specific.append(image_domain_specific[valid_indices].detach().cpu().numpy())
+                self.pos_model_domain_inv.append(pos_model_domain_inv[valid_indices].detach().cpu().numpy())
+                self.image_domain_inv.append(image_domain_inv[valid_indices].detach().cpu().numpy())
+                self.class_labels.append(label_positive[valid_indices].detach().cpu().numpy())
+
         return loss, pred_pos, gt_pos, pred_neg, gt_neg
 
     def training_step(self, batch: Any, batch_idx: int):
-        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch, train=True)
 
         # log train metrics
         acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
@@ -299,8 +331,54 @@ class DomainDisentangledModule(LightningModule):
         # `outputs` is a list of dicts returned from `training_step()`
         self.train_acc.reset()
 
+        if self.plot_tsne:
+            # Find the tSNE embedding of the features
+            pos_model_domain_specific_ts= np.concatenate(self.pos_model_domain_specific, axis=0)
+            image_domain_specific_ts = np.concatenate(self.image_domain_specific, axis=0)
+            pos_model_domain_inv_ts = np.concatenate(self.pos_model_domain_inv, axis=0)
+            image_domain_inv_ts = np.concatenate(self.image_domain_inv, axis=0)
+            class_labels_ts = np.concatenate(self.class_labels, axis=0)
+
+            tsne = TSNE(n_components=2, random_state=0)
+            # pos_model_domain_specific_ts = tsne.fit_transform(pos_model_domain_specific_ts)
+            # image_domain_specific_ts = tsne.fit_transform(image_domain_specific_ts)
+            # pos_model_domain_inv_ts = tsne.fit_transform(pos_model_domain_inv_ts)
+            # image_domain_inv_ts = tsne.fit_transform(image_domain_inv_ts)
+
+            # Concatenate model domain specific and image domain specific features
+            domain_specific_ts = np.concatenate((pos_model_domain_specific_ts, image_domain_specific_ts), axis=0)
+            num_pos_model = pos_model_domain_specific_ts.shape[0]
+            domain_specific_ts_labels = np.concatenate((class_labels_ts, class_labels_ts), axis=0)
+
+            domain_specific_ts = tsne.fit_transform(domain_specific_ts)
+            pos_model_domain_specific_ts = domain_specific_ts[:num_pos_model]
+            image_domain_specific_ts = domain_specific_ts[num_pos_model:]
+
+            # In the same plot plot the model domain specific features and image domain specific features
+            fig, ax = plt.subplots(figsize=(10, 10))
+            sns.scatterplot(x=pos_model_domain_specific_ts[:,0], y=pos_model_domain_specific_ts[:,1], hue=class_labels_ts, ax=ax)
+            sns.scatterplot(x=image_domain_specific_ts[:,0], y=image_domain_specific_ts[:,1], hue=class_labels_ts, ax=ax, marker='+')
+
+            # # Plot the tSNE embedding
+            # fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+            # sns.scatterplot(x=pos_model_domain_specific_ts[:,0], y=pos_model_domain_specific_ts[:,1], hue=class_labels_ts, ax=ax[0,0])
+            # # Use + marker for image domain specific features
+            # sns.scatterplot(x=image_domain_specific_ts[:,0], y=image_domain_specific_ts[:,1], hue=class_labels_ts, ax=ax[0,1], marker='+')
+
+            # Save the figure
+            save_path = self.tsne_path + 'domain_specific' + str(self.current_epoch) + '.png'
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            plt.savefig(save_path)
+
+            # Clear the lists
+            self.pos_model_domain_specific = []
+            self.image_domain_specific = []
+            self.pos_model_domain_inv = []
+            self.image_domain_inv = []
+
+
     def validation_step(self, batch: Any, batch_idx: int):
-        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch) 
+        loss, pred_pos, gt_pos, pred_neg, gt_neg = self.step(batch, train=False) 
 
         # log val metrics
         acc = (self.train_acc(pred_pos, gt_pos) + self.train_acc(pred_neg, gt_neg)) / 2
@@ -328,36 +406,58 @@ class DomainDisentangledModule(LightningModule):
 
         # return {"loss": loss} #, "preds": preds, "targets": targets}
 
-        if batch_idx == 0:
-            # We check the dissimilarity between the first image in the batch and the rest of the shapes
-            (model_shape, image, label) = batch
-            mesh, point = model_shape
-            batch_size = len(mesh)
-            image0 = image[0]
+        print("Working")
 
-            for i in range(batch_size):
-                meshes = mesh[i]
-                points = point[i]
-                points = points.unsqueeze(0)
-                azim, elev, dist = self.mvtn(points, c_batch_size=1)
-                rendered_images, _ = self.mvtn_renderer(meshes, points, azim=azim, elev=elev, dist=dist)
-                rendered_images = regualarize_rendered_views(rendered_images, 0.0, False, 0.3)
+        # print("Working on test set")
+        # if batch_idx == 0:
+        #     print("Working on test set")
+        #     # We check the dissimilarity between the first image in the batch and the rest of the shapes
+        #     # (model_shape, image, label) = batch
+        #     # mesh, point = model_shape
 
-                # Take one of the rendered images and compare it to the first image
-                image_i = rendered_images[0][3]
-                image0 = image0.squeeze(0)
-                concat_image = torch.cat((image0, image_i.detach().cpu()), axis=1)
+        #     (positive_model, image, negative_model) = batch
+        
+        #     mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
 
-                # Calculate the dissimilarity between the first image and the rest of the shapes
-                # Reshape image0 as 1x3xHxW
-                image0 = image0.unsqueeze(0)
+        #     mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
 
-                shape_features, image_features = self.forward(meshes, points, image0)
-                cosine_similarity = F.cosine_similarity(shape_features, image_features)
-                cosine_distance = (1 - cosine_similarity)*100
+        #     pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-                # Save the dissimilarity and the image
-                imsave(torchvision.utils.make_grid(concat_image), 'results/pretrained_features/image_' + str(i) + f'Dissimilarity: {cosine_distance.item():.2f}'  +  '.png')
+        #     # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+
+        #     pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
+        #     # pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
+        #     image_domain_specific, image_domain_inv = img_feat
+        #     # image_domain_specific, _ = img_feat                     # 512 dim. features
+        #     neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        #     # neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
+
+        #     batch_size = len(mesh_positive)
+        #     image0 = image[0]
+
+        #     for i in range(batch_size):
+        #         meshes = mesh_positive[i]
+        #         points = points_positive[i]
+        #         points = points.unsqueeze(0)
+        #         azim, elev, dist = self.mvtn(points, c_batch_size=1)
+        #         rendered_images, _ = self.mvtn_renderer(meshes, points, azim=azim, elev=elev, dist=dist)
+        #         rendered_images = regualarize_rendered_views(rendered_images, 0.0, False, 0.3)
+
+        #         # Take one of the rendered images and compare it to the first image
+        #         image_i = rendered_images[0][3]
+        #         image0 = image0.squeeze(0)
+        #         concat_image = torch.cat((image0, image_i.detach().cpu()), axis=1)
+
+        #         # Calculate the dissimilarity between the first image and the rest of the shapes
+        #         # Reshape image0 as 1x3xHxW
+        #         image0 = image0.unsqueeze(0)
+
+        #         shape_features, image_features = pos_model_domain_specific[i], image_domain_specific[i]
+        #         cosine_similarity = F.cosine_similarity(shape_features, image_features)
+        #         cosine_distance = (1 - cosine_similarity)*100
+
+        #         # Save the dissimilarity and the image
+        #         imsave(torchvision.utils.make_grid(concat_image), 'results/complete_model/image_' + str(i) + f'Dissimilarity: {cosine_distance.item():.2f}'  +  '.png')
 
         return {"loss": 0} #, "preds": preds, "targets": targets}
 

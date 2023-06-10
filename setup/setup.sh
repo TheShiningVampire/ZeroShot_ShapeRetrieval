@@ -17,3 +17,4 @@ pip install h5py
 pip install einops
 pip install seaborn
 pip install scikit-learn
+pip install black

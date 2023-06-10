@@ -7,6 +7,7 @@ class Shape_Feature_Extractor(nn.Module):
     def __init__(
         self,
         model_choice: int = 2,
+        num_classes: int = 20,
         ):
         super().__init__()
 
@@ -37,7 +38,7 @@ class Shape_Feature_Extractor(nn.Module):
                             nn.Linear(512, 256),
                             nn.ReLU(),
                             nn.Dropout(0.2),
-                            nn.Linear(256, 20)
+                            nn.Linear(256, num_classes)
                         )
         elif (model_choice == 1):
             self.layers = nn.Sequential(
@@ -53,7 +54,7 @@ class Shape_Feature_Extractor(nn.Module):
                             nn.Linear(512, 256),
                             nn.ReLU(),
                             nn.Dropout(0.2),
-                            nn.Linear(256, 20)
+                            nn.Linear(256, num_classes)
                         )
         elif (model_choice == 2):
             self.layers = nn.Sequential(
@@ -69,7 +70,7 @@ class Shape_Feature_Extractor(nn.Module):
                             nn.Linear(512, 256),
                             nn.ReLU(),
                             nn.Dropout(0.2),
-                            nn.Linear(256, 20)
+                            nn.Linear(256, num_classes)
                         )
 
 
