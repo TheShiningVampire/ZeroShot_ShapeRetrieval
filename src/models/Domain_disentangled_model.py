@@ -406,58 +406,116 @@ class DomainDisentangledModule(LightningModule):
 
         # return {"loss": loss} #, "preds": preds, "targets": targets}
 
-        print("Working")
+        print("Working on test set")
+        # We check the dissimilarity between the first image in the batch and the rest of the shapes
+        # (model_shape, image, label) = batch
+        # mesh, point = model_shape
 
-        # print("Working on test set")
-        # if batch_idx == 0:
-        #     print("Working on test set")
-        #     # We check the dissimilarity between the first image in the batch and the rest of the shapes
-        #     # (model_shape, image, label) = batch
-        #     # mesh, point = model_shape
+        (positive_model, image, negative_model) = batch
+    
+        mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
 
-        #     (positive_model, image, negative_model) = batch
-        
-        #     mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
+        mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
 
-        #     mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
+        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-        #     pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+        # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
-        #     # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+        pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
+        # pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
+        image_domain_specific, image_domain_inv = img_feat
+        # image_domain_specific, _ = img_feat                     # 512 dim. features
+        neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
+        # neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
 
-        #     pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
-        #     # pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
-        #     image_domain_specific, image_domain_inv = img_feat
-        #     # image_domain_specific, _ = img_feat                     # 512 dim. features
-        #     neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
-        #     # neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
+        batch_size = len(mesh_positive)
 
-        #     batch_size = len(mesh_positive)
-        #     image0 = image[0]
+        mean=[0.9799, 0.9799, 0.9799]
+        std=[0.1075, 0.1075, 0.1075]
 
-        #     for i in range(batch_size):
-        #         meshes = mesh_positive[i]
-        #         points = points_positive[i]
-        #         points = points.unsqueeze(0)
-        #         azim, elev, dist = self.mvtn(points, c_batch_size=1)
-        #         rendered_images, _ = self.mvtn_renderer(meshes, points, azim=azim, elev=elev, dist=dist)
-        #         rendered_images = regualarize_rendered_views(rendered_images, 0.0, False, 0.3)
+        for i in range(batch_size):
+            img = image[i]
+            meshes_p = mesh_positive[i]
+            points_p = points_positive[i]
 
-        #         # Take one of the rendered images and compare it to the first image
-        #         image_i = rendered_images[0][3]
-        #         image0 = image0.squeeze(0)
-        #         concat_image = torch.cat((image0, image_i.detach().cpu()), axis=1)
+            meshes_n = mesh_negative[i]
+            points_n = points_negative[i]
+            
+            points_p = points_p.unsqueeze(0)
+            azim_p, elev_p, dist_p = self.mvtn(points_p, c_batch_size=1)
+            rendered_images_p, _ = self.mvtn_renderer(meshes_p, points_p, azim=azim_p, elev=elev_p, dist=dist_p)
+            rendered_images_p = regualarize_rendered_views(rendered_images_p, 0.0, False, 0.3)
 
-        #         # Calculate the dissimilarity between the first image and the rest of the shapes
-        #         # Reshape image0 as 1x3xHxW
-        #         image0 = image0.unsqueeze(0)
+            points_n = points_n.unsqueeze(0)
+            azim_n, elev_n, dist_n = self.mvtn(points_n, c_batch_size=1)
+            rendered_images_n, _ = self.mvtn_renderer(meshes_n, points_n, azim=azim_n, elev=elev_n, dist=dist_n)
+            rendered_images_n = regualarize_rendered_views(rendered_images_n, 0.0, False, 0.3)
 
-        #         shape_features, image_features = pos_model_domain_specific[i], image_domain_specific[i]
-        #         cosine_similarity = F.cosine_similarity(shape_features, image_features)
-        #         cosine_distance = (1 - cosine_similarity)*100
+            # Take one of the rendered images and compare it to the first image
+            # image_i = rendered_images[0][7]
+            # image0 = image0.squeeze(0)
+            # image1 = image0*std[0] + mean[0]
+            # concat_image = torch.cat((image1, image_i), axis=1)
 
-        #         # Save the dissimilarity and the image
-        #         imsave(torchvision.utils.make_grid(concat_image), 'results/complete_model/image_' + str(i) + f'Dissimilarity: {cosine_distance.item():.2f}'  +  '.png')
+            image_p = rendered_images_p[0][7]
+            image_n = rendered_images_n[0][7]
+            img = img.squeeze(0)
+            img = img*std[0] + mean[0]
+            concat_image = torch.cat((img, image_p, image_n), axis=1)
+
+            img = image.unsqueeze(0)
+
+            # Calculate the dissimilarity between the first image and the rest of the shapes
+            # Reshape image0 as 1x3xHxW
+
+            shape_features_p = pos_model_domain_specific[i]
+            image_features = image_domain_specific[i]
+            shape_features_n = neg_model_domain_specific[i]
+
+            shape_features_p = shape_features_p.unsqueeze(0)
+            shape_features_n = shape_features_n.unsqueeze(0)
+            image_features = image_features.unsqueeze(0)
+            
+            cosine_similarity_p = F.cosine_similarity(shape_features_p, image_features)
+            cosine_distance_p = (1 - cosine_similarity_p)*100
+
+            cosine_similarity_n = F.cosine_similarity(shape_features_n, image_features)
+            cosine_distance_n = (1 - cosine_similarity_n)*100
+
+            # # Find euclidean distance
+            euclidean_distance_p = torch.dist(shape_features_p, image_features)
+            euclidean_distance_n = torch.dist(shape_features_n, image_features)
+
+            save_path = 'results/complete_model_3/' + str(batch_idx) + '/'
+
+            # if same_class:
+            #     save_path = save_path + 'same_class/'
+            # else:
+            #     save_path = save_path + 'different_class/'
+
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+            # Make the image grid
+            grid = torchvision.utils.make_grid(concat_image)
+
+            grid_np = grid.detach().cpu().numpy().transpose(1,2,0)
+
+            # Plot the image grid and write the dissimilarity values below the rendered images
+            # fig, ax = plt.subplots(figsize=(10, 10))
+            # ax.imshow(grid_np)
+            # ax.text(0, 0, 'Dissimilarity: ' + f'{cosine_distance_p.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_p.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
+            # ax.text(0, 32, 'Dissimilarity: ' + f'{cosine_distance_n.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_n.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
+
+            plt.figure(figsize=(10, 10))
+            plt.imshow(grid_np)
+            plt.text(0, 0, 'Cosine distance: ' + f'{cosine_distance_p.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_p.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
+            plt.text(0, 32, 'Cosine distance: ' + f'{cosine_distance_n.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_n.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
+
+            # Save the plot using plt.savefig()
+            plt.savefig(save_path + "image_" + str(i) + "_dissimilarity_" + f'{cosine_distance_p.item():.6f}'  +  '.png')
+
+            # # Save the dissimilarity and the image
+            # imsave(torchvision.utils.make_grid(concat_image), save_path + "image_" + str(i) + "_dissimilarity_" + f'{cosine_distance.item():.6f}'  +  '.png')
 
         return {"loss": 0} #, "preds": preds, "targets": targets}
 

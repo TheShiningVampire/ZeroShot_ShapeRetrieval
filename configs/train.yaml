@@ -42,11 +42,11 @@ task_name: "train"
 tags: ["dev"]
 
 # set False to skip model training
-train: False
+train: True
 
 # evaluate on test set, using best model weights achieved during training
 # lightning chooses best weights based on the metric specified in checkpoint callback
-test: True
+test: False
 
 # simply provide checkpoint path to resume training
 ckpt_path: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Complete_dataset/run2/checkpoints/last.ckpt
