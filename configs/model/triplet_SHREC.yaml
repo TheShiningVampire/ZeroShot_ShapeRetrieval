@@ -3,8 +3,8 @@ _target_: src.models.Domain_disentangled_model.DomainDisentangledModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.000005
-  weight_decay: 0.0000005
+  lr: 0.00003
+  weight_decay: 0.000001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau

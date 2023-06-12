@@ -1,0 +1,86 @@
+Traceback (most recent call last):
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/train.py", line 4, in <module>
+    import hydra
+ModuleNotFoundError: No module named 'hydra'
+[[36m2023-06-12 00:13:53,898[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Disabling python warnings! <cfg.extras.ignore_warnings=True>[0m
+[[36m2023-06-12 00:13:53,899[0m][[34mpytorch_lightning.utilities.seed[0m][[32mINFO[0m] - Global seed set to 1[0m
+[[36m2023-06-12 00:13:53,900[0m][[34msrc.tasks.train_task[0m][[32mINFO[0m] - Instantiating datamodule <src.datamodules.Triplet_SHREC13_datamodule.SHREC13_DataModule>[0m
+[[36m2023-06-12 00:13:53,985[0m][[34msrc.tasks.train_task[0m][[32mINFO[0m] - Instantiating model <src.models.Domain_disentangled_model.DomainDisentangledModule>[0m
+[[36m2023-06-12 00:13:59,648[0m][[34msrc.tasks.train_task[0m][[32mINFO[0m] - Instantiating callbacks...[0m
+[[36m2023-06-12 00:13:59,649[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Instantiating callback <pytorch_lightning.callbacks.ModelCheckpoint>[0m
+[[36m2023-06-12 00:13:59,652[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Instantiating callback <pytorch_lightning.callbacks.EarlyStopping>[0m
+[[36m2023-06-12 00:13:59,653[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Instantiating callback <pytorch_lightning.callbacks.RichModelSummary>[0m
+[[36m2023-06-12 00:13:59,654[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Instantiating callback <pytorch_lightning.callbacks.RichProgressBar>[0m
+[[36m2023-06-12 00:13:59,654[0m][[34msrc.tasks.train_task[0m][[32mINFO[0m] - Instantiating loggers...[0m
+[[36m2023-06-12 00:13:59,654[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Instantiating logger <pytorch_lightning.loggers.wandb.WandbLogger>[0m
+[[36m2023-06-12 00:13:59,658[0m][[34msrc.utils.utils[0m][[31mERROR[0m] - [0m
+Traceback (most recent call last):
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/utils/utils.py", line 1016, in wrap
+    metric_dict, object_dict = task_func(cfg=cfg)
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/tasks/train_task.py", line 43, in train
+    logger: List[LightningLoggerBase] = utils.instantiate_loggers(cfg.get("logger"))
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/utils/utils.py", line 1103, in instantiate_loggers
+    logger.append(hydra.utils.instantiate(lg_conf))
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 216, in instantiate
+    OmegaConf.resolve(config)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/omegaconf.py", line 785, in resolve
+    omegaconf._impl._resolve(cfg)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/_impl.py", line 40, in _resolve
+    _resolve_container_value(cfg, k)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/_impl.py", line 25, in _resolve_container_value
+    _resolve(node)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/_impl.py", line 44, in _resolve
+    _resolve_container_value(cfg, i)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/_impl.py", line 14, in _resolve_container_value
+    resolved = node._dereference_node()
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 246, in _dereference_node
+    node = self._dereference_node_impl(throw_on_resolution_failure=True)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 277, in _dereference_node_impl
+    return parent._resolve_interpolation_from_parse_tree(
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 584, in _resolve_interpolation_from_parse_tree
+    resolved = self.resolve_parse_tree(
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 764, in resolve_parse_tree
+    return visitor.visit(parse_tree)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 206, in accept
+    return visitor.visitConfigValue(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar_visitor.py", line 101, in visitConfigValue
+    return self.visit(ctx.getChild(0))
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 342, in accept
+    return visitor.visitText(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar_visitor.py", line 298, in visitText
+    return self.visitInterpolation(c)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar_visitor.py", line 125, in visitInterpolation
+    return self.visit(ctx.getChild(0))
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/antlr4/tree/Tree.py", line 34, in visit
+    return tree.accept(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar/gen/OmegaConfGrammarParser.py", line 1041, in accept
+    return visitor.visitInterpolationResolver(self)
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/grammar_visitor.py", line 179, in visitInterpolationResolver
+    return self.resolver_interpolation_callback(
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 750, in resolver_interpolation_callback
+    return self._evaluate_custom_resolver(
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/omegaconf/base.py", line 702, in _evaluate_custom_resolver
+    raise UnsupportedInterpolationType(
+omegaconf.errors.UnsupportedInterpolationType: Unsupported interpolation type paths
+[[36m2023-06-12 00:13:59,667[0m][[34msrc.utils.utils[0m][[32mINFO[0m] - Closing loggers...[0m
+Error executing job with overrides: ['logger=wandb']
+Traceback (most recent call last):
+  File "src/train.py", line 26, in main
+    metric_dict, _ = train(cfg)
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/utils/utils.py", line 1019, in wrap
+    raise ex
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/utils/utils.py", line 1016, in wrap
+    metric_dict, object_dict = task_func(cfg=cfg)
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/tasks/train_task.py", line 43, in train
+    logger: List[LightningLoggerBase] = utils.instantiate_loggers(cfg.get("logger"))
+  File "/mnt/elk/data/valaybun/other_users/vinit/ZeroShot_ShapeRetrieval/src/utils/utils.py", line 1103, in instantiate_loggers
+    logger.append(hydra.utils.instantiate(lg_conf))
+  File "/mnt/elk/data/valaybun/other_users/vinit/pytorch3d/lib/python3.8/site-packages/hydra/_internal/instantiate/_instantiate2.py", line 216, in instantiate
+    OmegaConf.resolve(config)
+omegaconf.errors.UnsupportedInterpolationType: Unsupported interpolation type paths
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
