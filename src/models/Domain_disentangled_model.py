@@ -45,14 +45,13 @@ class DomainDisentangledModule(LightningModule):
         mvnet_depth: int,
         feature_extractor_num_layers: int,
         domain_disentagled_image_feat: torch.nn.Module,
-        domain_disentagled_image_classifier: torch.nn.Module,
         domain_disentagled_shape_feat: torch.nn.Module,
-        domain_disentagled_shape_classifier: torch.nn.Module,
+        domain_classifier: torch.nn.Module,
         domain_disentangled_semantic_encoder: torch.nn.Module,
         cross_modal_latent_loss: torch.nn.Module,
         cross_modal_triplet_loss: torch.nn.Module,
         # info_nce_loss: torch.nn.Module,
-        cross_modal_classifer_loss: torch.nn.Module,
+        domain_classifier_loss: torch.nn.Module,
         feature_distance_loss: torch.nn.Module,
         image_feature_network: torch.nn.Module,
         shape_feature_network: torch.nn.Module,
@@ -117,18 +116,17 @@ class DomainDisentangledModule(LightningModule):
         # self.image_feature_extractor.requires_grad_(False)
 
         self.domain_disentagled_image_feat = domain_disentagled_image_feat
-        self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
 
         self.domain_disentagled_shape_feat = domain_disentagled_shape_feat
-        self.domain_disentagled_shape_classifier = domain_disentagled_shape_classifier
 
         self.domain_disentangled_semantic_encoder = domain_disentangled_semantic_encoder
 
+        self.domain_classifier = domain_classifier
+
         # loss function
         self.cross_modal_latent_loss = cross_modal_latent_loss
-        # self.cross_modal_triplet_loss = info_nce_loss
         self.cross_modal_triplet_loss = cross_modal_triplet_loss
-        self.cross_modal_classifer_loss = cross_modal_classifer_loss
+        self.domain_classifer_loss = domain_classifier_loss
         self.feature_distance_loss = feature_distance_loss
 
         # use separate metric instance for train, val and test step
@@ -235,17 +233,21 @@ class DomainDisentangledModule(LightningModule):
         cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
         image_domain_specific, neg_model_domain_specific)
         
-        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_inv)
+        classification_features_p = self.domain_classifier(pos_model_domain_inv)
 
-        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_inv)
+        classification_features_n = self.domain_classifier(neg_model_domain_inv)
 
-        classification_features_i = self.domain_disentagled_image_classifier(image_domain_inv)
+        classification_features_i = self.domain_classifier(image_domain_inv)
 
-        cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
+        label_p = torch.zeros_like(label_positive)
+        label_n = torch.zeros_like(label_negative)
+        label_i = torch.ones_like(label_positive)
 
-        cmcl2 = self.cross_modal_classifer_loss(classification_features_i, label_positive)
+        cmcl1 = self.domain_classifer_loss(classification_features_p, label_p)
 
-        cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
+        cmcl2 = self.domain_classifer_loss(classification_features_i, label_i)
+
+        cmcl3 = self.domain_classifer_loss(classification_features_n, label_n)
 
         # feature distance loss: dot product between domain specific features and domain invariant features
         fdl1 = self.feature_distance_loss(pos_model_domain_specific, pos_model_domain_inv)
