@@ -24,9 +24,6 @@ class Cross_Modal_Triplet_Loss(torch.nn.Module):
         ## Adding eps in torch.pow to avoid nan values (Somehow this worlks, but donno why?)
         # cross_modal_triplet_loss = torch.mean(torch.max(pos_cosine_distance**2 - neg_cosine_distance**2 + self.margin, torch.tensor(0.0).cuda()))
 
-        cross_modal_triplet_loss = torch.mean(pos_cosine_distance**2)*0.5 + torch.mean(torch.max(self.margin - neg_cosine_distance**2, torch.tensor(0.0).cuda()))*0.5
-
-        # cross_modal_triplet_loss = torch.mean(pos_euclidean_distance**2)*0.5 + torch.mean(torch.max(self.margin - neg_euclidean_distance**2, torch.tensor(0.0).cuda()))*0.5
-
+        cross_modal_triplet_loss = torch.mean(pos_cosine_distance)*0.5 + torch.mean(torch.max(self.margin - neg_cosine_distance, torch.tensor(0.0).cuda()))*0.5
 
         return cross_modal_triplet_loss

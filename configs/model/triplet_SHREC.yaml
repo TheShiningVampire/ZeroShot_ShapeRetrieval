@@ -3,57 +3,32 @@ _target_: src.models.Domain_disentangled_model.DomainDisentangledModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.00003
-  weight_decay: 0.000001
+  lr: 0.000007
+  weight_decay: 0.0000005
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
   _partial_: true
   mode: min
-  factor: 0.1
-  patience: 10
+  factor: 0.5
+  patience: 3
 
-multi_view_net:
-  _target_: src.models.components.mvtn.MVTN
-  nb_views: 8
-  views_config: circular
-  canonical_elevation: 30.0
-  canonical_distance: 2.2 
-  transform_distance: false
-  input_view_noise: 0.0 
-  shape_extractor: PointNet
-  screatch_feature_extractor: true
-
-multi_view_renderer:
-  _target_: src.models.components.renderer.MVRenderer
-  nb_views: 8
-  image_size: 224
-  pc_rendering: false
-  object_color: blue
-  background_color: white
-  light_direction : "random"
-  cull_backfaces : false
-  points_radius : 0.006 
-  points_per_pixel : 1 
-  faces_per_pixel : 2
-
-mvnet_depth: 50
 feature_extractor_num_layers: 6
 
 domain_disentagled_image_feat:
   _target_: src.models.components.domain_disentangled_image_feat.Domain_Disentangled_Img_Feature
-  num_classes: 20
+  num_classes: 79
 
 domain_disentagled_shape_feat:
   _target_: src.models.components.domain_disentangled_shape_feat.Domain_Disentangled_Shape_Feature
-  num_classes: 20
+  num_classes: 79
 
 domain_classifier:
   _target_: src.models.components.domain_classifier.Domain_Classifier
 
 domain_disentangled_semantic_encoder:
   _target_: src.models.components.domain_disentangled_semantic_encoder.Domain_Disentangled_Semantic_Encoder
-  num_classes: 20
+  num_classes: 79
 
 cross_modal_latent_loss:
   _target_: src.models.loss_functions.cross_modal_latent_loss.Cross_Modal_Latent_Loss
@@ -64,9 +39,6 @@ cross_modal_triplet_loss:
 
 feature_distance_loss:
   _target_: src.models.loss_functions.feature_distance_loss.Feature_Distance_Loss
-
-# info_nce_loss:
-#   _target_: src.models.loss_functions.info_nce_loss.Info_NCE_Loss
 
 domain_classifier_loss:
   _target_: src.models.loss_functions.domain_classification.Domain_Classification_Loss
@@ -86,7 +58,7 @@ lambda2: 3.0
 lambda3: 1.0
 lambda4: 2.0
 
-num_classes: 20
+num_classes: 79
 
 tsne_path: ${paths.tsne_path}
 
