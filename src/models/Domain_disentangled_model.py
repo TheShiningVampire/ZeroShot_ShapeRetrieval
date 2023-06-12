@@ -488,7 +488,7 @@ class DomainDisentangledModule(LightningModule):
             euclidean_distance_p = torch.dist(shape_features_p, image_features)
             euclidean_distance_n = torch.dist(shape_features_n, image_features)
 
-            save_path = 'results/complete_model_3/' + str(batch_idx) + '/'
+            save_path = 'results/complete_model_5/' + str(batch_idx) + '/'
 
             # if same_class:
             #     save_path = save_path + 'same_class/'
