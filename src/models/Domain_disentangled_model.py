@@ -122,7 +122,37 @@ class DomainDisentangledModule(LightningModule):
         self.class_labels = []
 
 
-    def forward(self, rendered_images_p, w2vec_positive, image, rendered_images_n, w2vec_negative):
+    def forward(self, 
+                rendered_images_p=None,
+                  w2vec_positive = None, 
+                  image = None, 
+                  rendered_images_n = None, 
+                  w2vec_negative = None
+                ):
+        
+        if ((rendered_images_p is None) or (rendered_images_n is None) ) and (image is not None):
+            with torch.no_grad():
+                image_features = self.image_feature_extractor(image)
+                image_domain_specific, _ = self.domain_disentagled_image_feat(image_features)
+
+            return image_domain_specific
+        
+        # If image is None and rendered_images_p is not None we return the domain specific features
+        if ((rendered_images_p is not None) and (image is None) and (rendered_images_n is None)):
+            with torch.no_grad():
+                B, M, C, H, W = rendered_images_p.shape
+                input_p = batch_tensor(rendered_images_p, dim=1,squeeze=True)
+                input_p = input_p.type(torch.cuda.FloatTensor)
+                shape_features_p = self.mvnetwork(input_p)
+                shape_features_p = shape_features_p.squeeze()
+
+                shape_features_p = unbatch_tensor(shape_features_p, B, dim=1, unsqueeze=True)
+                shape_features_p = torch.max(shape_features_p, dim=1)[0]
+
+                pos_model_domain_specific, _ = self.domain_disentagled_shape_feat(shape_features_p)
+
+            return pos_model_domain_specific
+
         # 2048 dimensional shape features for positive model
         B, M, C, H, W = rendered_images_p.shape
         input_p = batch_tensor(rendered_images_p, dim=1,squeeze=True)
@@ -153,7 +183,8 @@ class DomainDisentangledModule(LightningModule):
         pos_model_domain_specific, pos_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_p)
         neg_model_domain_specific, neg_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_n)
         image_domain_specific, image_domain_inv = self.domain_disentagled_image_feat(image_features)
-        semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
+        # semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
+        semantic_features = w2vec_positive
 
 
         return (pos_model_domain_specific,       
@@ -226,6 +257,8 @@ class DomainDisentangledModule(LightningModule):
             "fdl3: ", fdl3.detach().cpu().numpy()
           )
         
+        # Print number of non-zero elements in the features
+        print("pos_model_domain_specific !=0 : ", torch.count_nonzero(pos_model_domain_specific))
 
         loss = (self.hparams.lambda1* cmd) +\
                 (self.hparams.lambda2* cmtr) +\
@@ -417,7 +450,7 @@ class DomainDisentangledModule(LightningModule):
             euclidean_distance_p = torch.dist(shape_features_p, image_features)
             euclidean_distance_n = torch.dist(shape_features_n, image_features)
 
-            save_path = 'results/complete_model_5/' + str(batch_idx) + '/'
+            save_path = 'results/complete_model_9/' + str(batch_idx) + '/'
 
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
 

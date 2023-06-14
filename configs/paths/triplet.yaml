@@ -9,19 +9,19 @@ data_dir: /mnt/elk/data/valaybun/other_users/vinit/Data/ZERO_SHOT_DATASET_SHREC1
 
 
 # subfolder_name: Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
-subfolder_name: fast_model/lr7e-6
+subfolder_name: temp/test/2exlayers
 
 # path to logging directory
 # log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
-log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/fast_model/lr7e-6
+log_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/temp/test/2exlayers
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
 # output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
-output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/fast_model/lr7e-6
+output_dir: /mnt/elk/data/valaybun/other_users/vinit/logs/temp/test/2exlayers
 
-tsne_path: /mnt/elk/data/valaybun/other_users/vinit/logs/fast_model/lr7e-6/tsne
+tsne_path: /mnt/elk/data/valaybun/other_users/vinit/logs/temp/test/2exlayers/tsne
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

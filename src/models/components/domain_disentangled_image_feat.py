@@ -17,9 +17,9 @@ class Domain_Disentangled_Img_Feature(nn.Module):
                                 nn.Linear(1536, 1024),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),
-                                nn.Linear(1024, 512),
-                                nn.ReLU(),  
-                            ) 
+                                nn.Linear(1024, 300),
+                                nn.ReLU(),
+                            )  
 
         self.domain_invariant = nn.Sequential(
                                 nn.Linear(2048, 1536),
@@ -28,9 +28,9 @@ class Domain_Disentangled_Img_Feature(nn.Module):
                                 nn.Linear(1536, 1024),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),
-                                nn.Linear(1024, 512),
-                                nn.ReLU(),  
-                            ) 
+                                nn.Linear(1024, 300),
+                                nn.ReLU(),
+                            )   
 
     def forward(self, input):
         return (self.domain_specific(input), self.domain_invariant(input))
