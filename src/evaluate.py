@@ -10,6 +10,7 @@ from torchvision.transforms import transforms
 from PIL import Image
 import faiss
 import numpy as np
+from sklearn.metrics import average_precision_score, precision_recall_curve, auc
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -19,7 +20,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 root = pyrootutils.setup_root(__file__, dotenv=True, pythonpath=True)
 
 
-def calculate_nn_faiss(image_features, shape_features):
+def calculate_metrics(image_features, shape_features):
     # Convert the lists of tuples to separate lists of features and class_numbers
     image_feature_list, image_class_list = zip(*image_features)
     shape_feature_list, shape_class_list = zip(*shape_features)
@@ -30,30 +31,52 @@ def calculate_nn_faiss(image_features, shape_features):
     shape_features_np = np.vstack(shape_feature_list)
     shape_classes_np = np.array(shape_class_list)
     
-    # Build the FAISS index for the shape features
-    # index = faiss.IndexFlatL2(shape_features_np.shape[1])
-    # index.add(shape_features_np)
+    # Normalize the features for cosine similarity
+    faiss.normalize_L2(image_features_np)
+    faiss.normalize_L2(shape_features_np)
 
+    # Build the FAISS index for the shape features
     index = faiss.IndexFlatIP(shape_features_np.shape[1])
     index.add(shape_features_np)
 
     D, I = index.search(image_features_np, 1)  # D is the array of distances, I is the array of indices
 
-    nn_classes = shape_classes_np[I]
+    # Calculate metrics
+    binary_ground_truth = (np.expand_dims(image_classes_np, 1) == shape_classes_np[I])
+    metric_values = {
+        "mAP": [],
+        "FT": [],
+        "ST": [],
+        "E": [],
+        "DCG": []
+    }
 
-    # Perform the nearest neighbor search
-    D, I = index.search(image_features_np, 1)  # D is the array of distances, I is the array of indices
+    for gt_row, score_row in zip(binary_ground_truth, D):
+        if not np.any(gt_row):  # if there are no true relevant documents, skip this row
+            continue
+        # metric_values["mAP"].append(average_precision_score(gt_row, score_row))
+        metric_values["mAP"].append(auc(np.arange(1, gt_row.size + 1), gt_row.cumsum() / np.arange(1, gt_row.size + 1)))
 
-    # Retrieve the class of the most similar shape feature for each image feature
-    nn_classes = np.array(shape_class_list)[I]
+        precision, recall, _ = precision_recall_curve(gt_row, score_row)
+        # metric_values["E"].append((2 * precision * recall) / (precision + recall + 1e-10))  # avoid division by zero
+        metric_values["E"].append(auc(recall, precision))
 
-    # Calculate the NN precision as the proportion of images where the class of the NN shape matches the image class
-    # nn_precision = np.mean(image_classes_np == nn_classes)
-    nn_precision = sum([1 for image_class, nn_class in zip(image_classes_np, nn_classes) if image_class == nn_class])/len(image_classes_np)
+        num_rel_docs = np.sum(gt_row)
+        metric_values["FT"].append(np.mean(gt_row[:num_rel_docs]))
+        metric_values["ST"].append(np.mean(gt_row[:(2 * num_rel_docs)]))
 
-    return nn_precision
+        rel_scores_sorted = score_row[gt_row][::-1]  # reverse order to get descending
+        metric_values["DCG"].append(np.sum(rel_scores_sorted / np.log2(np.arange(2, rel_scores_sorted.size + 2))))
 
+    # For NN precision calculation
+    nn_classes = shape_classes_np[I[:, 0]]
+    nn_precision = np.mean(image_classes_np == nn_classes)
 
+    # Take means for each metric
+    metrics = {metric: np.mean(values) for metric, values in metric_values.items()}
+    metrics["NN"] = nn_precision
+
+    return metrics
 
 
 # %%
@@ -160,9 +183,8 @@ def main(cfg: DictConfig) -> float:
     # Use the function
     image_features = [(image_feature.cpu().numpy(), image_class) for image_feature, image_class in image_features]
     model_features = [(model_feature.cpu().numpy(), model_class) for model_feature, model_class in model_features]
-    nn_precision = calculate_nn_faiss(image_features, model_features)
-    print(f"NN precision: {nn_precision}")
-
+    metrics = calculate_metrics(image_features, model_features)
+    print(metrics)
 
 if __name__ == "__main__":
     main()
