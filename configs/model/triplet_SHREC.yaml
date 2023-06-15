@@ -3,7 +3,7 @@ _target_: src.models.Domain_disentangled_model.DomainDisentangledModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.000005
+  lr: 0.00001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -52,11 +52,11 @@ image_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Im
 
 shape_network_weights: /mnt/elk/data/valaybun/other_users/vinit/Saved_Weights/Shape_Featue_Extractor/weight_3.ckpt
 
-lambda1: 1.0
+lambda1: 0.1
 lambda2: 3.0
 lambda3: 1.0
-# lambda4: 2.0
-lambda4: 0.0
+lambda4: 2.0
+# lambda4: 0.0
 
 num_classes: 79
 
