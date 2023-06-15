@@ -59,6 +59,32 @@ def calculate_metrics(image_features, shape_features):
     return metrics
 
 
+def compute_ap(query_feature, query_label, model_features):
+    similarities = []
+    labels = []
+
+    for model_feature in model_features:
+        similarity = torch.cosine_similarity(query_feature, model_feature[0]).cpu().numpy()
+        is_same_class = int(query_label == model_feature[1])
+        
+        similarities.append(similarity)
+        labels.append(is_same_class)
+
+    # Sorting both lists (similarities and labels) by similarity in descending order
+    similarities, labels = zip(*sorted(zip(similarities, labels), reverse=True))
+    
+    return average_precision_score(labels, similarities)
+
+
+def compute_map(image_features, model_features):
+    ap_values = []
+
+    for image_feature in image_features:
+        ap = compute_ap(image_feature[0], image_feature[1], model_features)
+        ap_values.append(ap)
+
+    return np.mean(ap_values)
+
 # %%
 @hydra.main(version_base="1.2", config_path=root / "configs", config_name="eval.yaml")
 def main(cfg: DictConfig) -> float:
@@ -131,7 +157,7 @@ def main(cfg: DictConfig) -> float:
 
     # Retrieval
     # For each image, find k closest models
-    k = 3
+    k = 1
     acc = 0
     class_acc = 0
     classwise_acc = {}
@@ -205,6 +231,8 @@ def main(cfg: DictConfig) -> float:
 
     acc = acc/len(image_features)
 
+    mAP = compute_map(image_features, model_features)
+
     print("Classwise accuracy:")
     for class_name in classes:
         print(f"{class_name}: {classwise_acc[label_by_number[class_name]]/classwise_count[label_by_number[class_name]]}")
@@ -212,6 +240,7 @@ def main(cfg: DictConfig) -> float:
     print(f"NN: {acc}")
     print(f"First Tier Accuracy: {ft/len(image_features)}")
     print(f"Second Tier Accuracy: {st/len(image_features)}")
+    print(f"mAP: {mAP}")
 
     # # Use the function
     # image_features = [(image_feature.cpu().numpy(), image_class) for image_feature, image_class in image_features]
