@@ -1,0 +1,5 @@
+
+
+Best trained model NN: 0.66
+Branch: Final_experiments
+Checkpoint: /mnt/elk/data/valaybun/other_users/vinit/logs/Final_model/lr1e-5/checkpoints/last.ckpt
