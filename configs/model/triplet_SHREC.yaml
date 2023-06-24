@@ -4,12 +4,13 @@ optimizer:
   _target_: torch.optim.Adam
   _partial_: true
   lr: 0.00001
+  weight_decay: 0.000001
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
   _partial_: true
   mode: min
-  factor: 0.5
+  factor: 0.75
   patience: 3
 
 feature_extractor_num_layers: 6
@@ -36,8 +37,11 @@ cross_modal_triplet_loss:
   _target_: src.models.loss_functions.cross_modal_triplet_loss.Cross_Modal_Triplet_Loss
   margin: 1.0
 
+# feature_distance_loss:
+#   _target_: src.models.loss_functions.feature_distance_loss.Feature_Distance_Loss
+
 feature_distance_loss:
-  _target_: src.models.loss_functions.feature_distance_loss.Feature_Distance_Loss
+  _target_: src.models.loss_functions.mmd_loss.Maximum_Mean_Discrepancy_Loss
 
 domain_classifier_loss:
   _target_: src.models.loss_functions.domain_classification.Domain_Classification_Loss
