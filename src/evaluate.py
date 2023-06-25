@@ -268,10 +268,10 @@ def main(cfg: DictConfig) -> float:
 
     # Save the classwise accuracy in a csv file
 
-    # create the csv file
-    with open("classwise_accuracy_seen.csv", "w") as f:
-        for class_name in classes:
-            f.write(f"{class_name},{classwise_acc[label_by_number[class_name]]/classwise_count[label_by_number[class_name]]}\n")
+    # # create the csv file
+    # with open("classwise_accuracy_seen.csv", "w") as f:
+    #     for class_name in classes:
+    #         f.write(f"{class_name},{classwise_acc[label_by_number[class_name]]/classwise_count[label_by_number[class_name]]}\n")
 
     print(f"NN: {acc}")
     print(f"First Tier Accuracy: {ft/len(image_features)}")

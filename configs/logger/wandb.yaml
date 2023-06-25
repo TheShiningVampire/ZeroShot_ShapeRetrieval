@@ -12,5 +12,5 @@ wandb:
   prefix: "" # a string to put at the beginning of metric keys
   # entity: "" # set to name of your wandb team
   group: ""
-  tags: [Full dataset, lr=1e-5, un normalized, Final experiments]
+  tags: [Full dataset, lr=5e-6, un normalized, Final experiments]
   job_type: ""
