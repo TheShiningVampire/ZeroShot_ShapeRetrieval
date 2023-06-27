@@ -13,7 +13,7 @@
 
 ## Description
 
-What it does
+Code repository for the work on Zero Shot Sketch based 3D Shape Retrieval, completed as a part of the Dual Degree Project at IIT Bombay
 
 ## How to run
 
