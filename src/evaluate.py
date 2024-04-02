@@ -11,6 +11,7 @@ from PIL import Image
 import faiss
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, auc
+from torchvision.utils import save_image
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -43,41 +44,52 @@ def calculate_metrics(image_features, shape_features):
 
     # Calculate metrics
     binary_ground_truth = (np.expand_dims(image_classes_np, 1) == shape_classes_np[I])
-    metric_values = {
-        "mAP": [],
-        "FT": [],
-        "ST": [],
-        "E": [],
-        "DCG": []
-    }
-
-    for gt_row, score_row in zip(binary_ground_truth, D):
-        if not np.any(gt_row):  # if there are no true relevant documents, skip this row
-            continue
-        # metric_values["mAP"].append(average_precision_score(gt_row, score_row))
-        metric_values["mAP"].append(auc(np.arange(1, gt_row.size + 1), gt_row.cumsum() / np.arange(1, gt_row.size + 1)))
-
-        precision, recall, _ = precision_recall_curve(gt_row, score_row)
-        # metric_values["E"].append((2 * precision * recall) / (precision + recall + 1e-10))  # avoid division by zero
-        metric_values["E"].append(auc(recall, precision))
-
-        num_rel_docs = np.sum(gt_row)
-        metric_values["FT"].append(np.mean(gt_row[:num_rel_docs]))
-        metric_values["ST"].append(np.mean(gt_row[:(2 * num_rel_docs)]))
-
-        rel_scores_sorted = score_row[gt_row][::-1]  # reverse order to get descending
-        metric_values["DCG"].append(np.sum(rel_scores_sorted / np.log2(np.arange(2, rel_scores_sorted.size + 2))))
 
     # For NN precision calculation
     nn_classes = shape_classes_np[I[:, 0]]
     nn_precision = np.mean(image_classes_np == nn_classes)
 
-    # Take means for each metric
-    metrics = {metric: np.mean(values) for metric, values in metric_values.items()}
-    metrics["NN"] = nn_precision
+    metrics = {}
 
+    metrics["NN"] = nn_precision
+    # Calculate mAP
+    aps = [average_precision_score(gt_row, score_row) for gt_row, score_row in zip(binary_ground_truth, D)]
+    metrics["mAP"] = np.mean(aps)
+    
     return metrics
 
+
+def compute_ap(query_feature, query_label, model_features):
+    similarities = []
+    labels = []
+
+    for model_feature in model_features:
+        similarity = torch.cosine_similarity(query_feature, model_feature[0]).cpu().numpy()
+        is_same_class = int(query_label == model_feature[1])
+        
+        similarities.append(similarity)
+        labels.append(is_same_class)
+
+    # Sorting both lists (similarities and labels) by similarity in descending order
+    similarities, labels = zip(*sorted(zip(similarities, labels), reverse=True))
+    
+    return average_precision_score(labels, similarities)
+
+
+def compute_map(image_features, model_features):
+    ap_values = []
+
+    for image_feature in image_features:
+        ap = compute_ap(image_feature[0], image_feature[1], model_features)
+        ap_values.append(ap)
+
+    return np.mean(ap_values)
+
+def dcg_at_k(r, k):
+    r = np.asfarray(r)[:k]
+    if r.size:
+        return r[0] + np.sum(r[1:] / np.log2(np.arange(3, r.size + 2)))
+    return 0.
 
 # %%
 @hydra.main(version_base="1.2", config_path=root / "configs", config_name="eval.yaml")
@@ -113,6 +125,9 @@ def main(cfg: DictConfig) -> float:
                                                     std=[0.1075, 0.1075, 0.1075]
                                                 )
                                              ])
+    
+    # Dictionary to store number of models per class
+    classwise_model_count = {}
 
     for class_name in classes:
         class_dir = os.path.join(test_images, class_name)
@@ -126,7 +141,7 @@ def main(cfg: DictConfig) -> float:
                 image_feature = domain_disentangled_model(image=image)
 
             # Tuple of (image_feature, class_number)
-            image_features.append((image_feature, label_by_number[class_name]))
+            image_features.append((image_feature, label_by_number[class_name], image_name))
 
         for model_name in os.listdir(os.path.join(test_models, class_name)):
             model_path = os.path.join(test_models, class_name, model_name)
@@ -137,7 +152,14 @@ def main(cfg: DictConfig) -> float:
                 model_feature = domain_disentangled_model(rendered_images_p = model)
 
             # Tuple of (model_feature, class_number)
-            model_features.append((model_feature, label_by_number[class_name]))
+            model_features.append((model_feature, label_by_number[class_name], model_name))
+
+            # Save the number of models per class
+            if label_by_number[class_name] not in classwise_model_count:
+                classwise_model_count[label_by_number[class_name]] = 1
+            else:
+                classwise_model_count[label_by_number[class_name]] += 1
+
 
     # Retrieval
     # For each image, find k closest models
@@ -146,18 +168,74 @@ def main(cfg: DictConfig) -> float:
     class_acc = 0
     classwise_acc = {}
     classwise_count = {}
-    for image_feature, image_class in image_features:
+
+    ft = 0
+    st = 0
+
+    reciprocal_rank = []
+    relevance_scores = []
+    r_k = 10
+    # Start a retrieval results image
+    retrieval_results = torch.zeros((3, 224, 224*(k+1))).cuda()
+    
+
+    for (image_feature, image_class, image_name) in image_features:
+        pl = 0
         distances = []
-        for model_feature, model_class in model_features:
+        for (model_feature, model_class, model_name) in model_features:
             similarity = torch.cosine_similarity(image_feature, model_feature, dim=1)
             distance = 1 - similarity
-            distances.append((distance, model_class))
+            distances.append((distance, model_class, model_name))
 
         distances.sort(key=lambda x: x[0])
+        d = distances.copy()
         distances = distances[:k]
 
-        class_acc = sum([1 for _, model_class in distances if model_class == image_class])/k
+        class_acc = sum([1 for (_, model_class, model_name) in distances if model_class == image_class])/k
         acc += class_acc
+
+        # First Tier metric
+        ## In the first classwise_model_count[image_class] models, see how many are correct
+        ft += sum([1 for (_, model_class, model_name) in d[:classwise_model_count[image_class]] if model_class == image_class])/classwise_model_count[image_class]
+
+        # # Second Tier metric
+        # ## In the first 2* classwise_model_count[image_class] models, see how many are correct
+        st += sum([1 for (_, model_class, model_name) in d[:2*classwise_model_count[image_class]] if model_class == image_class])/(classwise_model_count[image_class])
+
+
+        # Find rank of the first correct model
+        for i in range(len(d)):
+            if d[i][1] == image_class:
+                reciprocal_rank.append(1/(i+1))
+                break
+            
+        # Computing relevance scores
+        relevance_scores.append([1 if d[i][1] == image_class else 0 for i in range(r_k)])
+
+        # # Plot the image and the closest model only if the first model is correct
+        # if (distances[0][1] == image_class) and (pl == 0):
+        #     pl = 1
+        #     image_path = os.path.join(test_images, classes[image_class], image_name)
+        #     image = Image.open(image_path).convert("RGB")
+        #     # Convert the image to tensor
+        #     image = transforms.ToTensor()(image).cuda()
+
+        #     for i in range(min(k, len(distances))):
+        #         model_path = os.path.join(test_models, classes[distances[i][1]], distances[i][2])
+        #         model = torch.load(model_path)
+        #         rendered_image = model[3, :, :, :]
+
+        #         # Concatenate the image and the rendered image in a row
+        #         image = torch.cat((image, rendered_image), dim=2)
+            
+        #     # Concate the images in a of retrival results
+        #     retrieval_results = torch.cat((retrieval_results, image), dim=1)
+
+        #     if (len(distances) < k):
+        #         for i in range(k - len(distances)):
+        #             retrieval_results = torch.cat((retrieval_results, torch.ones((3, 224, 224)).cuda()), dim=1)
+
+
 
         # Save classwise accuracy
         if image_class not in classwise_acc:
@@ -170,21 +248,37 @@ def main(cfg: DictConfig) -> float:
             classwise_count[image_class] = 1
         else:
             classwise_count[image_class] += 1
-        
+    
+    # Save the retrieval results
+    # save_image(retrieval_results, "retrieval_results_seen_classes.png", nrow=6)
 
     acc = acc/len(image_features)
-    print(f"Accuracy: {acc}")
+
+    mAP = compute_map(image_features, model_features)
+
+    mrr = np.mean(reciprocal_rank)
+
+    # Computing DCG
+    dcg_k = [ dcg_at_k(r, k) for r in relevance_scores ]
+    avg_dcg = np.mean(dcg_k)
 
     print("Classwise accuracy:")
     for class_name in classes:
         print(f"{class_name}: {classwise_acc[label_by_number[class_name]]/classwise_count[label_by_number[class_name]]}")
 
+    # Save the classwise accuracy in a csv file
 
-    # Use the function
-    image_features = [(image_feature.cpu().numpy(), image_class) for image_feature, image_class in image_features]
-    model_features = [(model_feature.cpu().numpy(), model_class) for model_feature, model_class in model_features]
-    metrics = calculate_metrics(image_features, model_features)
-    print(metrics)
+    # create the csv file
+    with open("classwise_accuracy_seen.csv", "w") as f:
+        for class_name in classes:
+            f.write(f"{class_name},{classwise_acc[label_by_number[class_name]]/classwise_count[label_by_number[class_name]]}\n")
+
+    print(f"NN: {acc}")
+    print(f"First Tier Accuracy: {ft/len(image_features)}")
+    print(f"Second Tier Accuracy: {st/len(image_features)}")
+    print(f"E: {mrr}")
+    print(f"DCG: {avg_dcg}")
+    print(f"mAP: {mAP}")
 
 if __name__ == "__main__":
     main()
