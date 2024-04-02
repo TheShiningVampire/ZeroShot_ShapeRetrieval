@@ -68,4 +68,3 @@ tsne_path: ${paths.tsne_path}
 
 plot_tsne: False
 
-# feature_distance_loss: 0.0
