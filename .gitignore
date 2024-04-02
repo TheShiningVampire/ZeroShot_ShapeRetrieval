@@ -26,7 +26,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-.github/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -155,6 +154,6 @@ data/
 .autoenv
 0_1.png
 configs/train.yaml
-configs/model/triplet_SHREC.yaml
+
 configs/model/triplet_SHREC.yaml
 configs/paths/triplet.yaml

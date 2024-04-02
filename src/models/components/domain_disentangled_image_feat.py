@@ -11,28 +11,24 @@ class Domain_Disentangled_Img_Feature(nn.Module):
 
         # Replace the last layer with a new one
         self.domain_specific = nn.Sequential(
-                                    nn.Linear(2048, 2048),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(2048),
-                                    nn.Linear(2048, 1024),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(1024),
-                                    nn.Linear(1024, 1024),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(1024)
-                                )   
+                                nn.Linear(2048, 1024),
+                                nn.ReLU(),
+                                nn.Dropout(0.2),    
+                                nn.Linear(1024,512),
+                                nn.ReLU(),
+                                nn.Dropout(0.2),
+                                nn.Linear(512, 300)
+                            )   
 
         self.domain_invariant = nn.Sequential(
-                                    nn.Linear(2048, 2048),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(2048),
-                                    nn.Linear(2048, 1024),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(1024),
-                                    nn.Linear(1024, 1024),
-                                    nn.Sigmoid(),
-                                    nn.BatchNorm1d(1024)
-                                )
+                                nn.Linear(2048, 1024),
+                                nn.ReLU(),
+                                nn.Dropout(0.2),    
+                                nn.Linear(1024,512),
+                                nn.ReLU(),
+                                nn.Dropout(0.2),
+                                nn.Linear(512, 300)
+                            )   
 
     def forward(self, input):
         return (self.domain_specific(input), self.domain_invariant(input))

@@ -2,11 +2,11 @@
 
 defaults:
   - _self_
-  - datamodule: shrec13.yaml # choose datamodule with `test_dataloader()` for evaluation
-  - model: siamese.yaml
+  - datamodule: shrec13_triplet.yaml # choose datamodule with `test_dataloader()` for evaluation
+  - model: triplet_SHREC.yaml
   - logger: null
-  - trainer: default.yaml
-  - paths: small_dataset.yaml
+  - trainer: gpu.yaml
+  - paths: triplet.yaml
   - extras: default.yaml
   - hydra: default.yaml
 
@@ -15,4 +15,4 @@ task_name: "eval"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /home/SharedData/Vinit/logs/SHREC13_Siamese_debugged/checkpoints/epoch_050.ckpt
+ckpt_path: /mnt/elk/data/valaybun/other_users/vinit/logs/Final_model/lr1e-5/checkpoints/last.ckpt

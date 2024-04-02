@@ -13,6 +13,8 @@ from src.utils.ops import regualarize_rendered_views
 from src.models.loss_functions.contrastive_loss import ContrastiveLoss
 import torch.nn.functional as F
 
+import numpy as np
+
 
 class SHREC_SHAPE_Feat_Trainer(LightningModule):
     """
@@ -35,6 +37,7 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
         multi_view_renderer: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler._LRScheduler,
+        num_classes: int,
     ):
         super().__init__()
 
@@ -60,9 +63,9 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
-        self.train_acc = Accuracy()
-        self.val_acc = Accuracy()
-        self.test_acc = Accuracy()
+        self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
+        self.test_acc = Accuracy(task="multiclass", num_classes=num_classes)
 
         # for logging best so far validation accuracy
         self.val_acc_best = MaxMetric()
@@ -91,6 +94,11 @@ class SHREC_SHAPE_Feat_Trainer(LightningModule):
 
     def training_step(self, batch: Any, batch_idx: int):
         loss, preds, targets = self.step(batch)
+
+        # np.set_printoptions(formatter={'float': lambda x: "{0:0.2f}".format(x)})
+        # print(
+        #     "loss: ", loss.detach().cpu().numpy()
+        #   )
 
         # log train metrics
         acc = self.train_acc(preds, targets)

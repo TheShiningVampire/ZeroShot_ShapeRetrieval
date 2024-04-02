@@ -5,15 +5,23 @@ root_dir: ${oc.env:PROJECT_ROOT}
 
 # path to data directory
 # data_dir: /home/SharedData/Vinit/pix3d_preprocessed/ # for pix3d
-data_dir: /home/SharedData/Vinit/ZERO_SHOT_DATASET_SHREC13_SMALL/  # for shrec13
+data_dir: /raid/biplab/tanisha/tanisha/Data/ZERO_SHOT_DATASET_SHREC13_NEW  # for shrec13
+
+
+# subfolder_name: Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
+subfolder_name: test_model/run_1
 
 # path to logging directory
-log_dir: /home/SharedData/Vinit/logs/phase2/
+# log_dir: /raid/biplab/tanisha/tanisha/logs/Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
+log_dir: /raid/biplab/tanisha/tanisha/logs/test_model/run_1
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`
 # use it to store all files generated during the run, like ckpts and metrics
-output_dir: /home/SharedData/Vinit/logs/phase2/
+# output_dir: /raid/biplab/tanisha/tanisha/logs/Complete_model/Partial_dataset/unnormalize_loss/${model.optimizer.lr}/
+output_dir: /raid/biplab/tanisha/tanisha/logs/test_model/run_1
+
+tsne_path: /raid/biplab/tanisha/tanisha/logs/test_model/run_1/tsne
 
 # path to working directory
 work_dir: ${hydra:runtime.cwd}

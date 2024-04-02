@@ -5,11 +5,14 @@
 defaults:
   - _self_
   - datamodule: shrec13_triplet.yaml
+  # - datamodule: shrec13_shapes.yaml
   - model: triplet_SHREC.yaml
+  # - model: shrec_shape_feat_trainer.yaml
   - callbacks: default.yaml
   - logger: null # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   # - trainer: gpu.yaml
   - trainer: gpu.yaml
+  # - paths: triplet.yaml
   - paths: triplet.yaml
   - extras: default.yaml
   - hydra: default.yaml
@@ -46,6 +49,7 @@ train: True
 test: False
 
 # simply provide checkpoint path to resume training
+# ckpt_path: /mnt/elk/data/valaybun/other_users/vinit/logs/Final_model/lr1e-5/checkpoints/last.ckpt
 ckpt_path: null
 
 # seed for random number generators in pytorch, numpy and python.random
