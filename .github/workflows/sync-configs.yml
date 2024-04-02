@@ -3,7 +3,7 @@ name: Sync Configs Directory
 on:
   push:
     branches:
-      - Final_experiments # This workflow triggers when changes are pushed to the Final_experiments branch
+      - Final_experiments
 
 jobs:
   sync-configs:
@@ -20,6 +20,8 @@ jobs:
           git config --global user.name "TheShiningVampire"
 
       - name: Sync configs directory to other branches
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }} # Use the secret name where you stored your PAT
         run: |
           SOURCE_BRANCH='Final_experiments'
           CONFIGS_DIR='configs'
@@ -32,5 +34,5 @@ jobs:
             git merge --no-ff "$SOURCE_BRANCH" --strategy-option=theirs --no-commit
             git add "${CONFIGS_DIR}/"
             git commit -m "Sync configs directory from ${SOURCE_BRANCH} to ${BRANCH}"
-            git push origin "${BRANCH}"
+            git push --set-upstream https://${{ secrets.PAT_TOKEN }}@github.com/TheShiningVampire/ZeroShot_ShapeRetrieval.git "${BRANCH}"
           done
