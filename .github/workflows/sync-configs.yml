@@ -1,0 +1,36 @@
+name: Sync Configs Directory
+
+on:
+  push:
+    branches:
+      - Final_experiments # This workflow triggers when changes are pushed to the Final_experiments branch
+
+jobs:
+  sync-configs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Fetch all history for all branches
+
+      - name: Configure Git
+        run: |
+          git config --global user.email "awale.vinit@gmail.com"
+          git config --global user.name "TheShiningVampire"
+
+      - name: Sync configs directory to other branches
+        run: |
+          SOURCE_BRANCH='Final_experiments'
+          CONFIGS_DIR='configs'
+          BRANCHES_TO_UPDATE=('main' 'SHREC14_DDPmodel' 'Cross-Modal-attention' 'New_model_1' 'ShapeFeatureArchDecider')
+
+          for BRANCH in "${BRANCHES_TO_UPDATE[@]}"
+          do
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git merge --no-ff "$SOURCE_BRANCH" --strategy-option=theirs --no-commit
+            git add "${CONFIGS_DIR}/"
+            git commit -m "Sync configs directory from ${SOURCE_BRANCH} to ${BRANCH}"
+            git push origin "${BRANCH}"
+          done
