@@ -40,19 +40,15 @@ class DomainDisentangledModule(LightningModule):
 
     def __init__(
         self,
-        multi_view_net: torch.nn.Module,
-        multi_view_renderer: torch.nn.Module,
-        mvnet_depth: int,
         feature_extractor_num_layers: int,
         domain_disentagled_image_feat: torch.nn.Module,
-        domain_disentagled_image_classifier: torch.nn.Module,
         domain_disentagled_shape_feat: torch.nn.Module,
-        domain_disentagled_shape_classifier: torch.nn.Module,
+        domain_classifier: torch.nn.Module,
         domain_disentangled_semantic_encoder: torch.nn.Module,
         cross_modal_latent_loss: torch.nn.Module,
         cross_modal_triplet_loss: torch.nn.Module,
         # info_nce_loss: torch.nn.Module,
-        cross_modal_classifer_loss: torch.nn.Module,
+        domain_classifier_loss: torch.nn.Module,
         feature_distance_loss: torch.nn.Module,
         image_feature_network: torch.nn.Module,
         shape_feature_network: torch.nn.Module,
@@ -73,15 +69,6 @@ class DomainDisentangledModule(LightningModule):
         # this line allows to access init params with 'self.hparams' attribute
         # also ensures init params will be stored in ckpt
         self.save_hyperparameters(logger=False, ignore=["net"])
-
-        # self.net = net
-        self.mvtn = multi_view_net  
-
-        self.mvtn_renderer = multi_view_renderer
-
-        depth2featdim = {18: 512, 34: 512, 50: 2048, 101: 2048, 152: 2048}
-        assert mvnet_depth in depth2featdim.keys(), "mvnet_depth must be one of 18, 34, 50, 101, 152"
-        # mvnetwork = torchvision.models.__dict__["resnet{}".format(mvnet_depth)](pretrained=True)
     
         # image_feature_extractor = torchvision.models.__dict__["resnet{}".format(mvnet_depth)]()
         image_feature_extractor = image_feature_network
@@ -91,7 +78,6 @@ class DomainDisentangledModule(LightningModule):
         shape_weights = torch.load(shape_network_weights)["state_dict"]
 
         # Get rid of the "net." prefix in the weights
-        # image_weights = {k[10:]: v for k, v in image_weights.items()}
         image_weights = {k[4:]: v for k, v in image_weights.items()}
 
         # Get rid of the keys that have 'mvtn' in them
@@ -104,38 +90,23 @@ class DomainDisentangledModule(LightningModule):
 
 
         self.mvnetwork = torch.nn.Sequential(*list(mvnetwork.children()))
-        # self.image_feature_extractor = torch.nn.Sequential(*list(image_feature_extractor.children())[:-1])
-        # self.image_feature_extractor = torch.nn.Sequential(*list(image_feature_extractor.children))
         self.image_feature_extractor = image_feature_extractor
 
-
-
-        ## TODO: remove this line while training
-        # self.mvtn.requires_grad_(False)
-        # self.mvtn_renderer.requires_grad_(False)
-        # self.mvnetwork.requires_grad_(False)
-        # self.image_feature_extractor.requires_grad_(False)
-
         self.domain_disentagled_image_feat = domain_disentagled_image_feat
-        self.domain_disentagled_image_classifier = domain_disentagled_image_classifier
-
         self.domain_disentagled_shape_feat = domain_disentagled_shape_feat
-        self.domain_disentagled_shape_classifier = domain_disentagled_shape_classifier
-
         self.domain_disentangled_semantic_encoder = domain_disentangled_semantic_encoder
+        self.domain_classifier = domain_classifier
 
         # loss function
         self.cross_modal_latent_loss = cross_modal_latent_loss
-        # self.cross_modal_triplet_loss = info_nce_loss
         self.cross_modal_triplet_loss = cross_modal_triplet_loss
-        self.cross_modal_classifer_loss = cross_modal_classifer_loss
+        self.domain_classifer_loss = domain_classifier_loss
         self.feature_distance_loss = feature_distance_loss
 
         # use separate metric instance for train, val and test step
         # to ensure a proper reduction over the epoch
         self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
         self.val_acc = Accuracy(task="multiclass", num_classes=num_classes)
-        self.val_loss = ContrastiveLoss()
         self.test_acc = Accuracy(task="multiclass", num_classes=num_classes)
 
         # for logging best so far validation accuracy
@@ -148,24 +119,39 @@ class DomainDisentangledModule(LightningModule):
 
         self.pos_model_domain_inv = []
         self.image_domain_inv = []
-
         self.class_labels = []
 
-        # Path to save the tSNE plots
-        self.tsne_path = tsne_path
 
-        self.plot_tsne = plot_tsne
+    def forward(self, 
+                rendered_images_p=None,
+                  w2vec_positive = None, 
+                  image = None, 
+                  rendered_images_n = None, 
+                  w2vec_negative = None
+                ):
+        
+        if ((rendered_images_p is None) or (rendered_images_n is None) ) and (image is not None):
+            with torch.no_grad():
+                image_features = self.image_feature_extractor(image)
+                image_domain_specific, _ = self.domain_disentagled_image_feat(image_features)
 
-    def forward(self, mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative):
-        c_batch_size = len(mesh_positive)
+            return image_domain_specific
+        
+        # If image is None and rendered_images_p is not None we return the domain specific features
+        if ((rendered_images_p is not None) and (image is None) and (rendered_images_n is None)):
+            with torch.no_grad():
+                B, M, C, H, W = rendered_images_p.shape
+                input_p = batch_tensor(rendered_images_p, dim=1,squeeze=True)
+                input_p = input_p.type(torch.cuda.FloatTensor)
+                shape_features_p = self.mvnetwork(input_p)
+                shape_features_p = shape_features_p.squeeze()
 
-        azim_p, elev_p, dist_p = self.mvtn(points_positive, c_batch_size=c_batch_size)
-        rendered_images_p, _ = self.mvtn_renderer(mesh_positive, points_positive, azim=azim_p, elev=elev_p, dist=dist_p)
-        rendered_images_p = regualarize_rendered_views(rendered_images_p, 0.0, False, 0.3)
+                shape_features_p = unbatch_tensor(shape_features_p, B, dim=1, unsqueeze=True)
+                shape_features_p = torch.max(shape_features_p, dim=1)[0]
 
-        azim_n, elev_n, dist_n = self.mvtn(points_negative, c_batch_size=c_batch_size)
-        rendered_images_n, _ = self.mvtn_renderer(mesh_negative, points_negative, azim=azim_n, elev=elev_n, dist=dist_n)
-        rendered_images_n = regualarize_rendered_views(rendered_images_n, 0.0, False, 0.3)
+                pos_model_domain_specific, _ = self.domain_disentagled_shape_feat(shape_features_p)
+
+            return pos_model_domain_specific
 
         # 2048 dimensional shape features for positive model
         B, M, C, H, W = rendered_images_p.shape
@@ -197,7 +183,8 @@ class DomainDisentangledModule(LightningModule):
         pos_model_domain_specific, pos_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_p)
         neg_model_domain_specific, neg_model_domain_inv = self.domain_disentagled_shape_feat(shape_features_n)
         image_domain_specific, image_domain_inv = self.domain_disentagled_image_feat(image_features)
-        semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
+        # semantic_features = self.domain_disentangled_semantic_encoder(w2vec_positive)
+        semantic_features = w2vec_positive
 
 
         return (pos_model_domain_specific,       
@@ -215,11 +202,11 @@ class DomainDisentangledModule(LightningModule):
     def step(self, batch: Any, train: bool = True):
         (positive_model, image, negative_model) = batch
         
-        mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
+        rendered_images_p, label_positive, w2vec_positive = positive_model
 
-        mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
+        rendered_images_n, label_negative, w2vec_negative = negative_model
 
-        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(rendered_images_p, w2vec_positive, image, rendered_images_n, w2vec_negative)
 
         # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
 
@@ -235,17 +222,21 @@ class DomainDisentangledModule(LightningModule):
         cmtr = self.cross_modal_triplet_loss(pos_model_domain_specific, 
         image_domain_specific, neg_model_domain_specific)
         
-        classification_features_p = self.domain_disentagled_shape_classifier(pos_model_domain_inv)
+        classification_features_p = self.domain_classifier(pos_model_domain_inv)
 
-        classification_features_n = self.domain_disentagled_shape_classifier(neg_model_domain_inv)
+        classification_features_n = self.domain_classifier(neg_model_domain_inv)
 
-        classification_features_i = self.domain_disentagled_image_classifier(image_domain_inv)
+        classification_features_i = self.domain_classifier(image_domain_inv)
 
-        cmcl1 = self.cross_modal_classifer_loss(classification_features_p, label_positive)
+        label_p = torch.zeros_like(label_positive)
+        label_n = torch.zeros_like(label_negative)
+        label_i = torch.ones_like(label_positive)
 
-        cmcl2 = self.cross_modal_classifer_loss(classification_features_i, label_positive)
+        cmcl1 = self.domain_classifer_loss(classification_features_p, label_p)
 
-        cmcl3 = self.cross_modal_classifer_loss(classification_features_n, label_negative)
+        cmcl2 = self.domain_classifer_loss(classification_features_i, label_i)
+
+        cmcl3 = self.domain_classifer_loss(classification_features_n, label_n)
 
         # feature distance loss: dot product between domain specific features and domain invariant features
         fdl1 = self.feature_distance_loss(pos_model_domain_specific, pos_model_domain_inv)
@@ -266,6 +257,8 @@ class DomainDisentangledModule(LightningModule):
             "fdl3: ", fdl3.detach().cpu().numpy()
           )
         
+        # Print number of non-zero elements in the features
+        print("pos_model_domain_specific !=0 : ", torch.count_nonzero(pos_model_domain_specific))
 
         loss = (self.hparams.lambda1* cmd) +\
                 (self.hparams.lambda2* cmtr) +\
@@ -302,7 +295,7 @@ class DomainDisentangledModule(LightningModule):
         # # # print("pred_neg: ", pred_neg.detach().cpu().numpy())
         # # # print("gt_neg: ", gt_neg.detach().cpu().numpy())
 
-        if self.plot_tsne:
+        if self.hparams.plot_tsne:
             # If training then store features of positive model and image for classes 0-9
             if train:
                 valid_indices = (label_positive < 10)
@@ -331,7 +324,7 @@ class DomainDisentangledModule(LightningModule):
         # `outputs` is a list of dicts returned from `training_step()`
         self.train_acc.reset()
 
-        if self.plot_tsne:
+        if self.hparams.plot_tsne:
             # Find the tSNE embedding of the features
             pos_model_domain_specific_ts= np.concatenate(self.pos_model_domain_specific, axis=0)
             image_domain_specific_ts = np.concatenate(self.image_domain_specific, axis=0)
@@ -366,7 +359,7 @@ class DomainDisentangledModule(LightningModule):
             # sns.scatterplot(x=image_domain_specific_ts[:,0], y=image_domain_specific_ts[:,1], hue=class_labels_ts, ax=ax[0,1], marker='+')
 
             # Save the figure
-            save_path = self.tsne_path + 'domain_specific' + str(self.current_epoch) + '.png'
+            save_path = self.hparams.tsne_path + 'domain_specific' + str(self.current_epoch) + '.png'
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
             plt.savefig(save_path)
 
@@ -413,61 +406,32 @@ class DomainDisentangledModule(LightningModule):
 
         (positive_model, image, negative_model) = batch
     
-        mesh_positive, points_positive, label_positive, w2vec_positive = positive_model
+        rendered_images_p, label_positive, w2vec_positive = positive_model
 
-        mesh_negative, points_negative, label_negative, w2vec_negative = negative_model
+        rendered_images_n, label_negative, w2vec_negative = negative_model
 
-        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
+        pos_model_feat, img_feat, neg_model_feat, semantic_feat = self.forward(rendered_images_p, w2vec_positive, image, rendered_images_n, w2vec_negative)
 
-        # pos_model_feat = self.forward(mesh_positive, points_positive, w2vec_positive, image, mesh_negative, points_negative, w2vec_negative)
-
-        pos_model_domain_specific, pos_model_domain_inv = pos_model_feat
-        # pos_model_domain_specific, _ = pos_model_feat           # 512 dim. features
+        pos_model_domain_specific, pos_model_domain_inv = pos_model_feat     
         image_domain_specific, image_domain_inv = img_feat
-        # image_domain_specific, _ = img_feat                     # 512 dim. features
         neg_model_domain_specific, neg_model_domain_inv = neg_model_feat
-        # neg_model_domain_specific, _ = neg_model_feat           # 512 dim. features
 
-        batch_size = len(mesh_positive)
+        batch_size = len(label_positive)
 
         mean=[0.9799, 0.9799, 0.9799]
         std=[0.1075, 0.1075, 0.1075]
 
         for i in range(batch_size):
             img = image[i]
-            meshes_p = mesh_positive[i]
-            points_p = points_positive[i]
 
-            meshes_n = mesh_negative[i]
-            points_n = points_negative[i]
-            
-            points_p = points_p.unsqueeze(0)
-            azim_p, elev_p, dist_p = self.mvtn(points_p, c_batch_size=1)
-            rendered_images_p, _ = self.mvtn_renderer(meshes_p, points_p, azim=azim_p, elev=elev_p, dist=dist_p)
-            rendered_images_p = regualarize_rendered_views(rendered_images_p, 0.0, False, 0.3)
-
-            points_n = points_n.unsqueeze(0)
-            azim_n, elev_n, dist_n = self.mvtn(points_n, c_batch_size=1)
-            rendered_images_n, _ = self.mvtn_renderer(meshes_n, points_n, azim=azim_n, elev=elev_n, dist=dist_n)
-            rendered_images_n = regualarize_rendered_views(rendered_images_n, 0.0, False, 0.3)
-
-            # Take one of the rendered images and compare it to the first image
-            # image_i = rendered_images[0][7]
-            # image0 = image0.squeeze(0)
-            # image1 = image0*std[0] + mean[0]
-            # concat_image = torch.cat((image1, image_i), axis=1)
-
-            image_p = rendered_images_p[0][7]
-            image_n = rendered_images_n[0][7]
+            image_p = rendered_images_p[i][3]
+            image_n = rendered_images_n[i][3]
             img = img.squeeze(0)
             img = img*std[0] + mean[0]
-            concat_image = torch.cat((img, image_p, image_n), axis=1)
-
-            img = image.unsqueeze(0)
+            concat_image = torch.cat((img, image_p, image_n), axis=2)
 
             # Calculate the dissimilarity between the first image and the rest of the shapes
             # Reshape image0 as 1x3xHxW
-
             shape_features_p = pos_model_domain_specific[i]
             image_features = image_domain_specific[i]
             shape_features_n = neg_model_domain_specific[i]
@@ -486,12 +450,7 @@ class DomainDisentangledModule(LightningModule):
             euclidean_distance_p = torch.dist(shape_features_p, image_features)
             euclidean_distance_n = torch.dist(shape_features_n, image_features)
 
-            save_path = 'results/complete_model_3/' + str(batch_idx) + '/'
-
-            # if same_class:
-            #     save_path = save_path + 'same_class/'
-            # else:
-            #     save_path = save_path + 'different_class/'
+            save_path = 'results/complete_model_9/' + str(batch_idx) + '/'
 
             os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
@@ -500,22 +459,13 @@ class DomainDisentangledModule(LightningModule):
 
             grid_np = grid.detach().cpu().numpy().transpose(1,2,0)
 
-            # Plot the image grid and write the dissimilarity values below the rendered images
-            # fig, ax = plt.subplots(figsize=(10, 10))
-            # ax.imshow(grid_np)
-            # ax.text(0, 0, 'Dissimilarity: ' + f'{cosine_distance_p.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_p.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
-            # ax.text(0, 32, 'Dissimilarity: ' + f'{cosine_distance_n.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_n.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
-
             plt.figure(figsize=(10, 10))
             plt.imshow(grid_np)
-            plt.text(0, 0, 'Cosine distance: ' + f'{cosine_distance_p.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_p.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
-            plt.text(0, 32, 'Cosine distance: ' + f'{cosine_distance_n.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_n.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='red', alpha=0.5))
+            plt.text(0, 0, 'Cosine distance: ' + f'{cosine_distance_p.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_p.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='blue', alpha=0.5))
+            plt.text(0, 32, 'Cosine distance: ' + f'{cosine_distance_n.item():.6f}' + ' Euclidean distance: ' + f'{euclidean_distance_n.item():.6f}', fontsize=12, color='white', bbox=dict(facecolor='blue', alpha=0.5))
 
             # Save the plot using plt.savefig()
             plt.savefig(save_path + "image_" + str(i) + "_dissimilarity_" + f'{cosine_distance_p.item():.6f}'  +  '.png')
-
-            # # Save the dissimilarity and the image
-            # imsave(torchvision.utils.make_grid(concat_image), save_path + "image_" + str(i) + "_dissimilarity_" + f'{cosine_distance.item():.6f}'  +  '.png')
 
         return {"loss": 0} #, "preds": preds, "targets": targets}
 

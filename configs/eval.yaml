@@ -15,4 +15,4 @@ task_name: "eval"
 tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
-ckpt_path: /mnt/elk/data/valaybun/other_users/vinit/logs/Complete_model/Complete_dataset/run2/checkpoints/last.ckpt
+ckpt_path: /mnt/elk/data/valaybun/other_users/vinit/logs/Final_model/lr1e-5/checkpoints/last.ckpt

@@ -11,25 +11,23 @@ class Domain_Disentangled_Shape_Feature(nn.Module):
 
         # Replace the last layer with a new one
         self.domain_specific = nn.Sequential(
-                                nn.Linear(2048, 1536),
+                                nn.Linear(2048, 1024),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),    
-                                nn.Linear(1536, 1024),
+                                nn.Linear(1024,512),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),
-                                nn.Linear(1024, 512),
-                                nn.ReLU(),  
+                                nn.Linear(512, 300)
                             )  
 
         self.domain_invariant = nn.Sequential(
-                                nn.Linear(2048, 1536),
+                                nn.Linear(2048, 1024),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),    
-                                nn.Linear(1536, 1024),
+                                nn.Linear(1024,512),
                                 nn.ReLU(),
                                 nn.Dropout(0.2),
-                                nn.Linear(1024, 512),
-                                nn.ReLU(),  
+                                nn.Linear(512, 300)
                             )  
 
     def forward(self, input):

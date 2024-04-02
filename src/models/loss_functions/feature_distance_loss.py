@@ -18,4 +18,7 @@ class Feature_Distance_Loss(torch.nn.Module):
         # Inner product
         fdl_loss = torch.mean(torch.bmm(domain_specific_feat.unsqueeze(1), domain_invariant_feat.unsqueeze(2)).squeeze(2).squeeze(1))
 
+        # Square the loss
+        fdl_loss = torch.pow(fdl_loss, 2)
+
         return fdl_loss

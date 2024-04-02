@@ -1,4 +1,4 @@
-_target_: src.datamodules.Triplet_SHREC13_datamodule.SHREC13_DataModule
+_target_: src.datamodules.Triplet_SHREC13_datamodule_2.SHREC13_DataModule_2
 data_dir: ${paths.data_dir}
 # batch_size: 4
 batch_size: 30

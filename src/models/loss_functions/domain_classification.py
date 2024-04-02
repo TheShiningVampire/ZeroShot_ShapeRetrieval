@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-class Cross_Modal_Classification_Loss(torch.nn.Module):
+class Domain_Classification_Loss(torch.nn.Module):
     def __init__(self):
-        super(Cross_Modal_Classification_Loss, self).__init__()
+        super(Domain_Classification_Loss, self).__init__()
 
         self.criterion = nn.CrossEntropyLoss()
 
